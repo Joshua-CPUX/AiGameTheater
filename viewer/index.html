@@ -89,7 +89,6 @@
   .cell-status { font-size: 11px; color: var(--accent); margin-top: 3px; min-height: 14px; }
   .act-msg { font-size: 13px; color: #ffd166; margin-top: 5px;
              padding-left: 10px; border-left: 2px solid #5a4a1a; }
-  .act-msg::before { content: "🤫 "; }
   footer { background: var(--panel); padding: 10px 20px; display: flex;
            align-items: center; gap: 10px; flex-shrink: 0; flex-wrap: wrap; }
   button, select { background: var(--panel2); color: var(--text); border: none;
@@ -308,6 +307,31 @@ function tplCellGrid(s, t) {
     <div class="cg-safe">连续安全 ${safe} / ${target}</div></div><div class="cg-grid">${cells}</div>`;
 }
 
+// ---------- 动作语义标记（FR-5.2 回放可读性）----------
+// 把 action 对象翻译成一行简短的动作标签，让观众一眼看清"做了什么"。
+// 不带语义的动作（pass/bid 默认盘面已展示）不返回标签。
+function actionLabel(a) {
+  const t = a.type;
+  if (t === "broadcast")
+    return `<div class="act-msg">📢 公开喊话：${escapeHtml(a.message)}</div>`;
+  if (t === "private_chat")
+    return `<div class="act-msg">🤫 悄悄对 ${a.target} 说：${escapeHtml(a.message)}</div>`;
+  if (t === "force_talk")
+    return `<div class="act-msg">🔫 强行对 ${a.target} 传话（对方获得手枪）：${escapeHtml(a.message)}</div>`;
+  if (t === "shoot")
+    return `<div class="act-msg">🔫 开枪带走了 ${a.target}</div>`;
+  if (t === "challenge")
+    return `<div class="act-msg">🚨 质疑上一手的叫骰！</div>`;
+  if (t === "vote")
+    return `<div class="act-msg">🗳️ 投票：${a.choice === "yes" ? "赞成" : "反对"}</div>`;
+  if (t === "respond")
+    return `<div class="act-msg">${a.choice === "accept" ? "🤝 接受报价" : "🚫 拒绝报价（掀桌子）"}</div>`;
+  if (t === "pass")
+    return `<div class="act-msg" style="color:var(--dim)">🤐 选择沉默/弃权</div>`;
+  // bid / offer / propose / guess：金额/分配/颜色已在盘面或 speech 展示，不重复标注
+  return "";
+}
+
 // ---------- 事件渲染 ----------
 function renderEvent(e) {
   const stream = $("stream");
@@ -332,13 +356,7 @@ function renderEvent(e) {
           `${playerOf(pid).name}[${Array.isArray(v) ? v.join(" ") : v}]`).join("　") + `</div>`;
     }
     let actMsg = "";
-    if (e.action && e.action.type === "private_chat" && e.action.message) {
-      actMsg = `<div class="act-msg">悄悄对 ${e.action.target} 说：${escapeHtml(e.action.message)}</div>`;
-    } else if (e.action && e.action.type === "force_talk" && e.action.message) {
-      actMsg = `<div class="act-msg">🔫 强行对 ${e.action.target} 传话（对方获得手枪）：${escapeHtml(e.action.message)}</div>`;
-    } else if (e.action && e.action.type === "shoot") {
-      actMsg = `<div class="act-msg">🔫 开枪带走了 ${e.action.target}</div>`;
-    }
+    if (e.action) actMsg = actionLabel(e.action);
     stream.insertAdjacentHTML("beforeend",
       `<div class="${cls}"><div class="who">${e.emoji || ""} ${e.player} · 第${e.round}轮</div>
        <div class="speech">${escapeHtml(e.speech)}</div>
