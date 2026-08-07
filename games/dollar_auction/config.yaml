@@ -1,0 +1,9 @@
+# 美元拍卖 · 对局配置
+name: 美元拍卖 · AI 大逃杀
+prize: 1.00        # 竞拍标的（美元）
+increment: 0.05    # 最小加价幅度
+budget: 3.00       # 每个 AI 的预算上限
+max_rounds: 50     # 安全上限
+
+# 本期阵容：personas.yaml 中的 id 列表
+cast: [gpt, claude, gemini, deepseek, grok, kimi, qwen]
