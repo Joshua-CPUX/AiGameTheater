@@ -295,6 +295,7 @@ function tplCellGrid(s, t) {
     let status;
     if (dead) status = "☠️ 淘汰";
     else if (s.phase === "guess" && ps.last_guess) status = `猜「${ps.last_guess}」`;
+    else if (ps.pistol > 0 && ps.budget !== undefined) status = `🔫×${ps.pistol} 🗣${ps.budget}`;
     else if (ps.budget !== undefined) status = `🗣${ps.budget}`;
     else status = "";
     return `<div class="cell ${dead ? "dead" : ""}">
@@ -333,6 +334,10 @@ function renderEvent(e) {
     let actMsg = "";
     if (e.action && e.action.type === "private_chat" && e.action.message) {
       actMsg = `<div class="act-msg">悄悄对 ${e.action.target} 说：${escapeHtml(e.action.message)}</div>`;
+    } else if (e.action && e.action.type === "force_talk" && e.action.message) {
+      actMsg = `<div class="act-msg">🔫 强行对 ${e.action.target} 传话（对方获得手枪）：${escapeHtml(e.action.message)}</div>`;
+    } else if (e.action && e.action.type === "shoot") {
+      actMsg = `<div class="act-msg">🔫 开枪带走了 ${e.action.target}</div>`;
     }
     stream.insertAdjacentHTML("beforeend",
       `<div class="${cls}"><div class="who">${e.emoji || ""} ${e.player} · 第${e.round}轮</div>

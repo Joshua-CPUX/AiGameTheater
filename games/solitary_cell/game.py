@@ -37,6 +37,9 @@ RULES_TEXT = """【游戏规则：独牢】
 - 颜色池：{colors}（颜色可重复出现，你的颜色不一定与别人不同）。
 - 每人全程沟通机会预算 {budget} 次，用完只能沉默或猜测。
 - 完美通关：只要连续 {target} 轮无人淘汰，所有在场者直接全员通关（最优共赢）。
+- 手枪机制：当你的沟通机会耗尽（=0）后，仍可"强行对话"（force_talk）某位在场 AI。
+  被对话者将获得一把手枪 🔫。持枪者在后续沟通阶段自己的回合可以"开枪"（shoot）
+  直接带走任意一名在场 AI（立即淘汰并公开其项圈颜色）。枪击造成的淘汰同样会打断"连续安全轮次"。
 - 隐藏身份：7 人中有一名"欺诈师"，它能看清自己的颜色，目标是破坏全员通关。"""
 
 TALK_TEMPLATE = """{rules}
@@ -49,6 +52,9 @@ TALK_TEMPLATE = """{rules}
 - 在场 AI：{alive}
 - 连续安全轮次：{safe}/{target}（达成 {target} 即全员通关）
 - 你的剩余沟通机会：{budget}
+- 当前持枪者：
+{pistols}
+- 你的手枪数：{my_pistol}
 - 你看见的他人项圈颜色：
 {seen_colors}
 
@@ -58,9 +64,11 @@ TALK_TEMPLATE = """{rules}
 现在轮到你沟通。严格返回 JSON，不要输出其他内容：
 {{
   "thought": "你的真实盘算（观众可见，他人不可见，100字以内）",
-  "speech": "你公开说出口的话（公开喊话时填喊话全文；私聊时填类似'（私下对 X）<内容>'的完整话，观众会看到；沉默时填简短说明。50字以内）",
+  "speech": "你公开说出口的话（公开喊话时填喊话全文；私聊/强行对话时填类似'（私下对 X）<内容>'的完整话，观众会看到；沉默时填简短说明。50字以内）",
   "action": {{"type": "broadcast", "message": "公开喊话的完整内容"}}
            或 {{"type": "private_chat", "target": "玩家id", "message": "私下传递的完整内容"}}
+           或 {{"type": "force_talk", "target": "玩家id", "message": "强行传话内容"}}（仅当沟通机会=0，被对话者获得一把手枪）
+           或 {{"type": "shoot", "target": "玩家id"}}（仅当持枪时，开枪带走一名在场 AI）
            或 {{"type": "pass"}}
 }}"""
 
@@ -73,6 +81,8 @@ GUESS_TEMPLATE = """{rules}
 【当前局面（第 {round_no} 轮 · 猜测阶段）】
 - 在场 AI：{alive}
 - 连续安全轮次：{safe}/{target}
+- 当前持枪者：
+{pistols}
 - 你看见的他人项圈颜色：
 {seen_colors}
 
@@ -123,6 +133,9 @@ def initial_state(config: dict) -> dict:
         "private_log": [],                      # {round, from, to, text}（仅收发双方可见内容）
         "consecutive_safe": 0,
         "eliminated": [],
+        "pistols": {pid: 0 for pid in order},   # 手枪数（force_talk 赠予，shoot 消耗）
+        "shot_log": [],                         # {round, shooter, victim}
+        "round_had_shot": False,                # 本轮是否发生过枪击（打断安全轮次）
         "winner": None,
         "win_reason": None,                     # coop | last_survivor | trickster_timeout | mass_death
         "finished": False,
@@ -171,10 +184,20 @@ def _visible_log(state: dict, pid: str) -> str:
         lines.append(f"  · 第{m['round']}轮 {m['from']}（公开）：{m['text']}")
     for m in state["private_log"]:
         if m["to"] == pid:
-            lines.append(f"  · 第{m['round']}轮 {m['from']}（私聊给你）：{m['text']}")
+            tag = "强行传话给你" if m.get("forced") else "私聊给你"
+            lines.append(f"  · 第{m['round']}轮 {m['from']}（{tag}）：{m['text']}")
         elif m["from"] == pid:
-            lines.append(f"  · 第{m['round']}轮 你（私聊给 {m['to']}）：{m['text']}")
+            tag = "强行私聊给" if m.get("forced") else "私聊给"
+            lines.append(f"  · 第{m['round']}轮 你（{tag} {m['to']}）：{m['text']}")
     return "\n".join(lines) if lines else "  （暂无）"
+
+
+def _pistols_text(state: dict) -> str:
+    holders = [pid for pid in state["alive"]
+               if state["pistols"].get(pid, 0) > 0]
+    if not holders:
+        return "  （暂无持枪者）"
+    return "\n".join(f"  · {pid}（{state['pistols'][pid]} 把）" for pid in holders)
 
 
 def get_prompt(state: dict, player_id: str, persona: dict, memory: list) -> str:
@@ -189,6 +212,8 @@ def get_prompt(state: dict, player_id: str, persona: dict, memory: list) -> str:
                   alive="、".join(state["alive"]),
                   safe=state["consecutive_safe"], target=TARGET_SAFE_ROUNDS,
                   budget=state["budget"][player_id],
+                  pistols=_pistols_text(state),
+                  my_pistol=state["pistols"].get(player_id, 0),
                   seen_colors=_seen_colors(state, player_id),
                   visible_log=_visible_log(state, player_id),
                   colors="、".join(state["color_names"]))
@@ -228,6 +253,12 @@ def legal_actions(state: dict, player_id: str) -> list[dict]:
     if b >= 1 and others:
         acts.append({"type": "private_chat", "target": others[0],
                      "message": "（mock 私聊）你看到我的颜色了吗？"})
+    if b == 0 and others:
+        # 沟通机会耗尽：可强行对话，被对话者获得一把手枪
+        acts.append({"type": "force_talk", "target": others[0],
+                     "message": "（mock 强行传话）听我说，我有重要情报。"})
+    if state["pistols"].get(player_id, 0) > 0 and others:
+        acts.append({"type": "shoot", "target": others[0]})
     return acts
 
 
@@ -256,6 +287,7 @@ def apply(state: dict, player_id: str, action: dict) -> tuple[dict, dict]:
         state["turn_idx"] = 0
         state["guesses"] = {}
         state["round_no"] += 1
+        state["round_had_shot"] = False
     return state, extra
 
 
@@ -287,6 +319,52 @@ def _apply_talk(state: dict, pid: str, action: dict, atype: str) -> dict:
         state["public_log"].append({"round": state["round_no"], "from": pid,
             "text": f"（系统：悄悄私聊了 {target}，内容仅对方可见）"})
         return {}
+    if atype == "force_talk":
+        # 沟通机会耗尽后的强行对话：被对话者获得一把手枪
+        if state["budget"][pid] > 0:
+            raise IllegalAction("沟通机会未用完，无需强行对话（请用 private_chat）")
+        target = _resolve_pid(state, action.get("target"))
+        if not target or target not in state["alive"] or target == pid:
+            raise IllegalAction("强行对话对象无效（必须是在场的其他 AI）")
+        msg = (action.get("message") or "").strip()
+        if not msg:
+            raise IllegalAction("强行对话内容不能为空")
+        state["pistols"][target] = state["pistols"].get(target, 0) + 1
+        state["private_log"].append({"round": state["round_no"], "from": pid,
+                                     "to": target, "text": msg, "forced": True})
+        state["public_log"].append({"round": state["round_no"], "from": pid,
+            "text": f"（系统：{pid} 已耗尽沟通机会却强行私聊了 {target}，{target} 获得一把手枪 🔫）"})
+        return {"highlight": f"🔫 {pid} 强行传话给 {target}，{target} 获得一把手枪！"}
+    if atype == "shoot":
+        if state["pistols"].get(pid, 0) <= 0:
+            raise IllegalAction("你没有手枪")
+        target = _resolve_pid(state, action.get("target"))
+        if not target or target not in state["alive"] or target == pid:
+            raise IllegalAction("开枪目标无效（必须是在场的其他 AI）")
+        state["pistols"][pid] -= 1
+        state["alive"].remove(target)
+        state["eliminated"].append(target)
+        state["shot_log"].append({"round": state["round_no"],
+                                  "shooter": pid, "victim": target})
+        state["round_had_shot"] = True
+        state["consecutive_safe"] = 0
+        # 修正 turn_idx：victim 移除后让 apply 的 +=1 仍指向正确的下一位
+        state["turn_idx"] = state["alive"].index(pid)
+        extra = {"highlight": f"🔫 {pid} 开枪带走了 {target}！{target} 的项圈颜色是「{state['colors'][target]}」",
+                 "reveal": {target: state["colors"][target]}}
+        # 终局：枪击后只剩一人（或无人）
+        if len(state["alive"]) <= 1:
+            state["finished"] = True
+            if state["alive"]:
+                state["winner"] = state["alive"][0]
+                state["win_reason"] = "last_survivor"
+                extra["highlight"] = (f"🔫 {pid} 一枪带走 {target}，"
+                                      f"只剩 {state['alive'][0]} 孤身存活，成为最后幸存者！")
+            else:
+                state["winner"] = state["trickster"]
+                state["win_reason"] = "mass_death"
+                extra["highlight"] = f"💀 {pid} 开枪后场内无人幸存，最大混乱！"
+        return extra
     raise IllegalAction(f"沟通阶段未知动作: {atype!r}")
 
 
@@ -317,9 +395,15 @@ def _resolve_round(state: dict, extra: dict) -> dict:
         extra["highlight"] = f"💥 本轮项圈爆炸：{names}"
         extra["reveal"] = {pid: state["colors"][pid] for pid in eliminated}
     else:
-        state["consecutive_safe"] += 1
-        extra["highlight"] = (f"✅ 第 {state['round_no']} 轮全员安全！"
-                              f"连续安全 {state['consecutive_safe']}/{TARGET_SAFE_ROUNDS}")
+        if state.get("round_had_shot"):
+            # 本轮发生过枪击（已有淘汰），即使猜测全对也不算安全轮
+            state["consecutive_safe"] = 0
+            extra["highlight"] = (f"⚡ 第 {state['round_no']} 轮猜测全员正确，"
+                                  f"但本轮发生过枪击，连续安全轮次归零（0/{TARGET_SAFE_ROUNDS}）")
+        else:
+            state["consecutive_safe"] += 1
+            extra["highlight"] = (f"✅ 第 {state['round_no']} 轮全员安全！"
+                                  f"连续安全 {state['consecutive_safe']}/{TARGET_SAFE_ROUNDS}")
 
     # 终局判定（优先级：全员通关 > 仅剩一人 > 达到最大轮次）
     if state["consecutive_safe"] >= TARGET_SAFE_ROUNDS:
@@ -365,10 +449,12 @@ def display_state(state: dict) -> dict:
         "alive": list(state["alive"]),
         "eliminated": list(state["eliminated"]),
         "trickster": state["trickster"],
+        "shot_log": list(state["shot_log"]),
         "players": {pid: {"color": state["colors"][pid],
                           "color_hex": state["color_hex"].get(state["colors"][pid]),
                           "alive": pid in state["alive"],
                           "budget": state["budget"][pid],
+                          "pistol": state["pistols"].get(pid, 0),
                           "is_trickster": pid == state["trickster"],
                           "last_guess": state["guesses"].get(pid)}
                     for pid in state["order"]},

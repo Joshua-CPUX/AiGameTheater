@@ -50,7 +50,7 @@ python -m core.standings out
 core/               共享运行器（llm 适配 / 对局循环 / 日志字幕 / 班底人设 / 积分榜）
 games/<游戏名>/      一个游戏一个文件夹：game.py + config.yaml
 viewer/index.html   回放页面（纯 HTML 单文件，双击即用）
-tests/              单元测试（pytest，94 个用例）
+tests/              单元测试（pytest，105 个用例）
 out/                对局产出（日志 + 字幕 + 积分榜）
 docs/               需求文档与系统设计
 ```
@@ -67,7 +67,7 @@ docs/               需求文档与系统设计
 ## 测试
 
 ```bash
-python -m pytest tests/ -v     # 94 个用例
+python -m pytest tests/ -v     # 105 个用例
 ```
 
 ## 环境变量（API Key 仅从环境变量读取）

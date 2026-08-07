@@ -264,6 +264,126 @@ def _run_full_round_return_extra(state, guess_map):
     return state, extra
 
 
+def _drain_talk_to_guess(state):
+    """talk 阶段一直 pass 直到进入 guess（应对中途有人被枪击淘汰的轮次）。"""
+    guard = 0
+    while state["phase"] == "talk" and guard < 100:
+        pid = game.active_players(state)[0]
+        state, _ = game.apply(state, pid, {"type": "pass"})
+        guard += 1
+    return state
+
+
+def _guess_all_correct(state):
+    guard = 0
+    while state["phase"] == "guess" and guard < 100:
+        pid = game.active_players(state)[0]
+        state, _ = game.apply(state, pid, {"type": "guess", "color": state["colors"][pid]})
+        guard += 1
+    return state
+
+
+# ---------------------------------------------------------------- 手枪机制（force_talk / shoot）
+
+class TestPistol:
+    def test_force_talk_requires_zero_budget(self, state):
+        with pytest.raises(game.IllegalAction, match="无需强行对话"):
+            game.apply(state, "a", {"type": "force_talk", "target": "b", "message": "x"})
+
+    def test_force_talk_grants_pistol(self, state):
+        state["budget"]["a"] = 0
+        s, extra = game.apply(state, "a",
+                              {"type": "force_talk", "target": "b", "message": "救命"})
+        assert s["pistols"]["b"] == 1
+        assert "手枪" in extra["highlight"]
+        # 不消耗预算（本来就是 0）
+        assert s["budget"]["a"] == 0
+
+    def test_force_talk_invalid_target(self, state):
+        state["budget"]["a"] = 0
+        with pytest.raises(game.IllegalAction, match="对象无效"):
+            game.apply(state, "a", {"type": "force_talk", "target": "a", "message": "x"})
+        with pytest.raises(game.IllegalAction, match="对象无效"):
+            game.apply(state, "a", {"type": "force_talk", "target": "zzz", "message": "x"})
+
+    def test_force_talk_empty_rejected(self, state):
+        state["budget"]["a"] = 0
+        with pytest.raises(game.IllegalAction, match="不能为空"):
+            game.apply(state, "a", {"type": "force_talk", "target": "b", "message": "  "})
+
+    def test_force_talk_content_private(self, state):
+        state["budget"]["a"] = 0
+        s, _ = game.apply(state, "a",
+                          {"type": "force_talk", "target": "b", "message": "secret"})
+        v_b = game.visible_state(s, "b")
+        v_c = game.visible_state(s, "c")
+        assert any(m["text"] == "secret" and m.get("forced") for m in v_b["private_log"])
+        assert all(m["text"] != "secret" for m in v_c["private_log"])
+        # 公开元信息所有人都可见（含手枪提示）
+        assert any("手枪" in m["text"] for m in v_c["public_log"])
+
+    def test_shoot_requires_pistol(self, state):
+        with pytest.raises(game.IllegalAction, match="没有手枪"):
+            game.apply(state, "a", {"type": "shoot", "target": "b"})
+
+    def test_shoot_eliminates_and_consumes_pistol(self, state):
+        state["pistols"]["b"] = 1
+        s, _ = game.apply(state, "a", {"type": "pass"})  # 轮到 b
+        assert game.active_players(s)[0] == "b"
+        s, extra = game.apply(s, "b", {"type": "shoot", "target": "c"})
+        assert "c" in s["eliminated"] and "c" not in s["alive"]
+        assert s["pistols"]["b"] == 0
+        assert s["consecutive_safe"] == 0
+        assert s["round_had_shot"] is True
+        assert extra["reveal"]["c"] == s["colors"]["c"]
+
+    def test_shoot_turn_advances_correctly(self, state):
+        # alive=[a,b,c,...]，b 持枪打 a（b 前面的人）后下一手应轮到 c
+        state["pistols"]["b"] = 1
+        s, _ = game.apply(state, "a", {"type": "pass"})
+        s, _ = game.apply(s, "b", {"type": "shoot", "target": "a"})
+        assert "a" not in s["alive"]
+        assert game.active_players(s)[0] == "c"
+
+    def test_shoot_last_survivor(self):
+        cfg = {"seed": 0, "players": [{"id": x} for x in "ab"]}
+        s = game.initial_state(cfg)
+        s["pistols"]["a"] = 1
+        s, _ = game.apply(s, "a", {"type": "shoot", "target": "b"})
+        assert game.is_terminal(s) == "a"
+        assert s["win_reason"] == "last_survivor"
+
+    def test_shot_breaks_safe_streak(self, state):
+        s = state
+        for _ in range(2):
+            s = _run_full_round(s, {pid: s["colors"][pid] for pid in s["alive"]})
+        assert s["consecutive_safe"] == 2
+        # 第三轮：a 强行对话给 b 枪，b 开枪打 c
+        s["budget"]["a"] = 0
+        s["pistols"]["b"] = 1
+        s, _ = game.apply(s, "a", {"type": "force_talk", "target": "b", "message": "x"})
+        s, _ = game.apply(s, "b", {"type": "shoot", "target": "c"})
+        assert s["consecutive_safe"] == 0
+        # 本轮剩余 talk pass + guess 全对，安全轮次不应增加（发生过枪击）
+        s = _drain_talk_to_guess(s)
+        s = _guess_all_correct(s)
+        assert s["consecutive_safe"] == 0
+        assert s["round_had_shot"] is False  # 新一轮已重置
+
+    def test_pistol_carryover_to_next_talk(self, state):
+        # 第一轮 a 强行对话给 b 枪，b 本轮不开枪；下一轮 b 仍持枪可开
+        state["budget"]["a"] = 0
+        s, _ = game.apply(state, "a", {"type": "force_talk", "target": "b", "message": "x"})
+        s = _drain_talk_to_guess(s)
+        s = _guess_all_correct(s)  # 全对，进入下一轮 talk
+        assert s["phase"] == "talk"
+        assert s["pistols"]["b"] == 1
+        # 轮到 b 时 shoot 仍在合法动作里
+        s, _ = game.apply(s, s["alive"][0], {"type": "pass"})  # a（若存活）pass
+        if game.active_players(s)[0] == "b":
+            assert any(a["type"] == "shoot" for a in game.legal_actions(s, "b"))
+
+
 # ---------------------------------------------------------------- Mock 端到端
 
 def test_mock_e2e(tmp_path):
