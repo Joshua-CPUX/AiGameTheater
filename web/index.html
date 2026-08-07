@@ -6,157 +6,206 @@
 <title>AI 游戏剧场 · 控制台</title>
 <style>
   :root {
-    --bg: #0f1117; --panel: #171a23; --panel2: #1e2230; --panel3: #262b3d;
-    --text: #e8eaf0; --dim: #9aa0b0; --dim2: #6b7180;
-    --accent: #ffd166; --accent2: #ffb84d;
+    --bg: #0d0f14; --panel: #14171f; --panel2: #1b1f2a; --panel3: #242938;
+    --text: #e6e8ee; --dim: #8b90a0; --dim2: #5f6473;
+    --accent: #ffd166; --accent2: #f5b942;
     --green: #4ade80; --red: #f87171; --blue: #60a5fa;
-    --border: #2a3044;
+    --border: #262b38; --border2: #323848;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { background: var(--bg); color: var(--text); height: 100vh;
-         font-family: "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
-         display: flex; overflow: hidden; }
+  html, body { height: 100%; }
+  body { background: var(--bg); color: var(--text);
+         font-family: "PingFang SC", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+         display: flex; overflow: hidden; font-size: 14px; }
   /* 左侧导航 */
-  aside { width: 220px; background: var(--panel); padding: 18px 14px;
-          flex-shrink: 0; display: flex; flex-direction: column; gap: 4px;
+  aside { width: 208px; background: var(--panel); padding: 18px 12px;
+          flex-shrink: 0; display: flex; flex-direction: column; gap: 3px;
           border-right: 1px solid var(--border); }
-  .logo { font-size: 17px; font-weight: 700; margin-bottom: 18px;
-          display: flex; align-items: center; gap: 8px; }
-  .logo .dot { width: 10px; height: 10px; border-radius: 50%;
-               background: var(--accent); box-shadow: 0 0 12px var(--accent); }
-  .nav-item { padding: 11px 14px; border-radius: 10px; cursor: pointer;
-              font-size: 14px; color: var(--dim); transition: all .18s;
+  .logo { font-size: 15px; font-weight: 700; margin: 2px 6px 20px;
+          display: flex; align-items: center; gap: 9px; letter-spacing: .2px; }
+  .logo svg { flex-shrink: 0; }
+  .nav-item { padding: 10px 12px; border-radius: 8px; cursor: pointer;
+              font-size: 13.5px; color: var(--dim); transition: all .15s;
               display: flex; align-items: center; gap: 10px; }
   .nav-item:hover { background: var(--panel2); color: var(--text); }
-  .nav-item.active { background: var(--accent); color: #111; font-weight: 600; }
-  .nav-item .ic { font-size: 17px; }
+  .nav-item.active { background: var(--panel3); color: var(--text); }
+  .nav-item.active .ic { color: var(--accent); }
+  .nav-item .ic { display: flex; color: var(--dim2); transition: color .15s; }
   .nav-foot { margin-top: auto; font-size: 11px; color: var(--dim2);
-              padding: 12px 8px; line-height: 1.6; }
-  /* 主区 */
-  main { flex: 1; overflow-y: auto; padding: 26px 34px; }
-  .tab { display: none; max-width: 920px; }
-  .tab.active { display: block; animation: fade .25s; }
-  @keyframes fade { from { opacity: 0; transform: translateY(8px); }
+              padding: 12px 8px 4px; line-height: 1.7; border-top: 1px solid var(--border); }
+  /* 主区 — 全宽 */
+  main { flex: 1; overflow-y: auto; padding: 24px 32px; min-width: 0; }
+  .tab { display: none; }
+  .tab.active { display: block; animation: fade .2s; }
+  @keyframes fade { from { opacity: 0; transform: translateY(6px); }
                     to { opacity: 1; transform: none; } }
-  h2 { font-size: 22px; font-weight: 700; margin-bottom: 4px; }
-  .sub { color: var(--dim); font-size: 13px; margin-bottom: 22px; }
+  h2 { font-size: 19px; font-weight: 650; margin-bottom: 3px; letter-spacing: .2px; }
+  .sub { color: var(--dim); font-size: 12.5px; margin-bottom: 20px; }
+  code { background: var(--panel2); padding: 1px 6px; border-radius: 4px;
+         font-size: 12px; color: var(--accent); }
   /* 卡片 */
   .card { background: var(--panel); border: 1px solid var(--border);
-          border-radius: 14px; padding: 20px; margin-bottom: 16px; }
-  .card h3 { font-size: 14px; color: var(--accent); margin-bottom: 14px;
-             text-transform: uppercase; letter-spacing: .5px; }
+          border-radius: 12px; padding: 18px 20px; margin-bottom: 14px; }
+  .card h3 { font-size: 12px; color: var(--dim); margin-bottom: 14px;
+             text-transform: uppercase; letter-spacing: .8px; font-weight: 600;
+             display: flex; align-items: center; gap: 8px; }
+  .card h3 .step { width: 18px; height: 18px; border-radius: 5px;
+                   background: var(--accent); color: #111; font-size: 11px;
+                   display: inline-flex; align-items: center; justify-content: center;
+                   font-weight: 700; }
   /* 表单 */
-  .row { display: flex; align-items: center; gap: 14px; margin-bottom: 14px;
-         flex-wrap: wrap; }
+  .row { display: flex; align-items: flex-end; gap: 16px; margin-bottom: 12px; flex-wrap: wrap; }
   .field { display: flex; flex-direction: column; gap: 5px; }
-  .field label { font-size: 12px; color: var(--dim); }
+  .field label { font-size: 11.5px; color: var(--dim); }
   select, input[type=text], input[type=number], input[type=password] {
     background: var(--panel2); border: 1px solid var(--border); color: var(--text);
-    padding: 9px 12px; border-radius: 8px; font-size: 14px; outline: none;
-    transition: border .15s; min-width: 140px; }
-  select:focus, input:focus { border-color: var(--accent); }
-  input[type=number] { width: 110px; }
+    padding: 8px 11px; border-radius: 7px; font-size: 13.5px; outline: none;
+    transition: border .15s, box-shadow .15s; min-width: 150px;
+    font-family: inherit; }
+  select:focus, input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(255,209,102,.1); }
+  input[type=number] { width: 120px; }
+  input.invalid { border-color: var(--red); box-shadow: 0 0 0 3px rgba(248,113,113,.12); }
   /* 参数网格 */
-  .params-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-                 gap: 12px; }
-  .param-cell label { font-size: 12px; color: var(--dim); margin-bottom: 5px;
-                      display: block; }
-  .param-cell .hint { font-size: 11px; color: var(--dim2); margin-top: 3px; }
+  .params-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 12px; }
+  .param-cell label { font-size: 11.5px; color: var(--dim); margin-bottom: 5px; display: block; }
+  .param-cell .hint { font-size: 10.5px; color: var(--dim2); margin-top: 3px; }
   /* 阵容 */
-  .cast-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-               gap: 8px; }
-  .cast-chip { display: flex; align-items: center; gap: 8px; padding: 9px 12px;
+  .cast-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+  .cast-count { font-size: 12px; color: var(--dim); }
+  .cast-count b { color: var(--text); font-weight: 600; }
+  .cast-count .req { color: var(--dim2); }
+  .cast-count.ok b { color: var(--green); }
+  .cast-count.bad b { color: var(--red); }
+  .cast-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 8px; }
+  .cast-chip { display: flex; align-items: center; gap: 10px; padding: 9px 11px;
                background: var(--panel2); border: 1px solid var(--border);
-               border-radius: 10px; cursor: pointer; transition: all .15s; user-select: none; }
-  .cast-chip:hover { border-color: var(--accent); }
-  .cast-chip.on { border-color: var(--accent); background: rgba(255,209,102,.1); }
-  .cast-chip .av { width: 28px; height: 28px; border-radius: 50%; display: flex;
-                   align-items: center; justify-content: center; font-size: 15px;
-                   border: 2px solid; flex-shrink: 0; }
+               border-radius: 9px; cursor: pointer; transition: all .15s; user-select: none; }
+  .cast-chip:hover { border-color: var(--border2); background: var(--panel3); }
+  .cast-chip.on { border-color: var(--accent); background: rgba(255,209,102,.08); }
+  .cast-chip .av { width: 28px; height: 28px; border-radius: 7px; overflow: hidden;
+                   flex-shrink: 0; box-shadow: inset 0 0 0 1px rgba(255,255,255,.08); }
+  .cast-chip .av svg { width: 100%; height: 100%; display: block; }
   .cast-chip .nm { font-size: 13px; font-weight: 500; }
+  .cast-chip .vn { font-size: 10.5px; color: var(--dim2); margin-top: 1px; }
   /* 模式 */
-  .modes { display: flex; gap: 10px; flex-wrap: wrap; }
-  .mode-card { flex: 1; min-width: 180px; padding: 14px; border: 1px solid var(--border);
-               border-radius: 10px; cursor: pointer; transition: all .15s; background: var(--panel2); }
-  .mode-card:hover { border-color: var(--dim); }
-  .mode-card.on { border-color: var(--accent); background: rgba(255,209,102,.08); }
-  .mode-card .mt { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
-  .mode-card .md { font-size: 11px; color: var(--dim); line-height: 1.5; }
-  .mode-card .mc { font-size: 11px; margin-top: 6px; }
+  .modes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .mode-card { padding: 13px 14px; border: 1px solid var(--border); border-radius: 9px;
+               cursor: pointer; transition: all .15s; background: var(--panel2); }
+  .mode-card:hover { border-color: var(--border2); }
+  .mode-card.on { border-color: var(--accent); background: rgba(255,209,102,.07); }
+  .mode-card .mt { font-size: 13.5px; font-weight: 600; margin-bottom: 4px; }
+  .mode-card .md { font-size: 11px; color: var(--dim); line-height: 1.5; min-height: 33px; }
+  .mode-card .mc { font-size: 11px; margin-top: 7px; font-weight: 500; }
   .mode-card.mock .mc { color: var(--green); }
   .mode-card.cheap .mc { color: var(--blue); }
   .mode-card.official .mc { color: var(--accent); }
+  /* 校验提示 */
+  .validate-box { margin-top: 14px; padding: 11px 14px; border-radius: 8px;
+                  font-size: 12.5px; line-height: 1.6; display: none; }
+  .validate-box.show { display: block; }
+  .validate-box.err { background: rgba(248,113,113,.08); border: 1px solid rgba(248,113,113,.3); color: #fca5a5; }
+  .validate-box.warn { background: rgba(255,209,102,.07); border: 1px solid rgba(255,209,102,.25); color: #fde68a; }
+  .validate-box ul { margin: 6px 0 0 16px; }
   /* 按钮 */
-  .btn { background: var(--accent); color: #111; border: none; padding: 11px 26px;
-         border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer;
-         transition: all .15s; display: inline-flex; align-items: center; gap: 8px; }
-  .btn:hover { background: var(--accent2); transform: translateY(-1px); }
-  .btn:disabled { opacity: .45; cursor: not-allowed; transform: none; }
+  .btn { background: var(--accent); color: #14171f; border: none; padding: 10px 22px;
+         border-radius: 8px; font-size: 13.5px; font-weight: 600; cursor: pointer;
+         transition: all .15s; display: inline-flex; align-items: center; gap: 7px;
+         font-family: inherit; }
+  .btn:hover:not(:disabled) { background: var(--accent2); }
+  .btn:disabled { opacity: .4; cursor: not-allowed; }
   .btn.ghost { background: var(--panel2); color: var(--text); border: 1px solid var(--border); }
-  .btn.ghost:hover { background: var(--panel3); }
+  .btn.ghost:hover:not(:disabled) { background: var(--panel3); border-color: var(--border2); }
+  .btn svg { flex-shrink: 0; }
   /* 进度 */
-  .progress-box { background: var(--panel2); border-radius: 10px; padding: 16px;
+  .progress-box { background: var(--panel2); border-radius: 9px; padding: 16px;
                   border: 1px solid var(--border); }
-  .stat-row { display: flex; gap: 28px; flex-wrap: wrap; }
-  .stat { display: flex; flex-direction: column; gap: 2px; }
-  .stat .k { font-size: 11px; color: var(--dim); text-transform: uppercase; letter-spacing: .5px; }
-  .stat .v { font-size: 20px; font-weight: 700; color: var(--accent); }
-  .stat .v.dim { color: var(--text); }
+  .stat-row { display: flex; gap: 32px; flex-wrap: wrap; }
+  .stat { display: flex; flex-direction: column; gap: 3px; }
+  .stat .k { font-size: 10.5px; color: var(--dim); text-transform: uppercase; letter-spacing: .6px; }
+  .stat .v { font-size: 19px; font-weight: 650; color: var(--accent); }
+  .stat .v.dim { color: var(--text); font-size: 15px; }
   .stat .v.green { color: var(--green); }
-  .bar { height: 6px; background: var(--panel3); border-radius: 3px; overflow: hidden;
-         margin-top: 12px; }
-  .bar-fill { height: 100%; background: var(--accent); width: 0;
-              transition: width .4s; border-radius: 3px; }
-  .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid var(--dim2);
+  .bar { height: 5px; background: var(--panel3); border-radius: 3px; overflow: hidden; margin-top: 14px; }
+  .bar-fill { height: 100%; background: var(--accent); width: 0; transition: width .4s; border-radius: 3px; }
+  .spinner { display: inline-block; width: 13px; height: 13px; border: 2px solid var(--dim2);
              border-top-color: var(--accent); border-radius: 50%; animation: spin .8s linear infinite; }
   @keyframes spin { to { transform: rotate(360deg); } }
-  .badge { font-size: 11px; padding: 3px 8px; border-radius: 6px; font-weight: 600; }
+  .badge { font-size: 11px; padding: 3px 9px; border-radius: 5px; font-weight: 600; display: inline-block; }
   .badge.run { background: rgba(96,165,250,.15); color: var(--blue); }
   .badge.done { background: rgba(74,222,128,.15); color: var(--green); }
   .badge.err { background: rgba(248,113,113,.15); color: var(--red); }
   /* 密钥 */
-  .key-row { display: grid; grid-template-columns: 1fr 2fr 90px; gap: 12px;
+  .key-row { display: grid; grid-template-columns: 1.4fr 2fr 90px; gap: 12px;
              align-items: center; padding: 11px 0; border-bottom: 1px solid var(--border); }
   .key-row:last-child { border: none; }
-  .key-row .kl { font-size: 13px; }
-  .key-row .kv { font-size: 11px; color: var(--dim2); margin-top: 2px; }
+  .key-row .kl { font-size: 13px; display: flex; align-items: center; gap: 8px; }
+  .key-row .kv { font-size: 11px; color: var(--dim2); margin-top: 2px; font-family: monospace; }
   .key-status { font-size: 11px; text-align: right; font-weight: 600; }
   .key-status.set { color: var(--green); }
   .key-status.unset { color: var(--dim2); }
   /* 表格 */
   table { width: 100%; border-collapse: collapse; }
-  th, td { text-align: left; padding: 10px 12px; font-size: 13px;
-           border-bottom: 1px solid var(--border); }
-  th { color: var(--dim); font-weight: 600; font-size: 11px;
-       text-transform: uppercase; letter-spacing: .5px; }
+  th, td { text-align: left; padding: 10px 12px; font-size: 13px; border-bottom: 1px solid var(--border); }
+  th { color: var(--dim); font-weight: 600; font-size: 10.5px;
+       text-transform: uppercase; letter-spacing: .6px; }
   tr:hover td { background: var(--panel2); }
-  .pill { font-size: 11px; padding: 2px 8px; border-radius: 6px;
+  tr:last-child td { border-bottom: none; }
+  .pill { font-size: 11px; padding: 2px 8px; border-radius: 5px;
           background: var(--panel3); color: var(--dim); }
-  /* 回放 iframe */
-  #replay-frame { width: 100%; height: calc(100vh - 140px); border: 1px solid var(--border);
-                  border-radius: 12px; background: var(--bg); }
-  .replay-bar { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
-  .replay-bar .back { cursor: pointer; color: var(--accent); font-size: 13px; }
-  .empty { text-align: center; padding: 50px; color: var(--dim2); font-size: 14px; }
+  .model-name { display: inline-flex; align-items: center; gap: 6px; }
+  .model-name .av { width: 22px; height: 22px; border-radius: 5px; overflow: hidden;
+                    box-shadow: inset 0 0 0 1px rgba(255,255,255,.08); }
+  .model-name .av svg { width: 100%; height: 100%; display: block; }
+  /* 回放 iframe — 全宽全高 */
+  #replay-frame { width: 100%; height: calc(100vh - 110px); border: 1px solid var(--border);
+                  border-radius: 10px; background: var(--bg); }
+  .replay-bar { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+  .replay-bar .back { cursor: pointer; color: var(--accent); font-size: 13px;
+                      display: inline-flex; align-items: center; gap: 5px; }
+  .empty { text-align: center; padding: 56px; color: var(--dim2); font-size: 13px; }
   .toast { position: fixed; bottom: 24px; right: 24px; background: var(--panel3);
-           border: 1px solid var(--border); padding: 12px 18px; border-radius: 10px;
-           font-size: 13px; box-shadow: 0 8px 30px rgba(0,0,0,.4); opacity: 0;
-           transform: translateY(10px); transition: all .25s; z-index: 100; }
+           border: 1px solid var(--border2); padding: 11px 17px; border-radius: 8px;
+           font-size: 13px; box-shadow: 0 8px 30px rgba(0,0,0,.5); opacity: 0;
+           transform: translateY(10px); transition: all .25s; z-index: 100; max-width: 360px; }
   .toast.show { opacity: 1; transform: none; }
   .toast.ok { border-color: var(--green); }
   .toast.err { border-color: var(--red); }
   .cost-line { font-size: 12px; color: var(--dim); font-family: monospace; }
+  /* 滚动条 */
+  ::-webkit-scrollbar { width: 9px; height: 9px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 5px; }
+  ::-webkit-scrollbar-thumb:hover { background: #404858; }
 </style>
 </head>
 <body>
 <aside>
-  <div class="logo"><span class="dot"></span>AI 游戏剧场</div>
-  <div class="nav-item active" data-tab="play"><span class="ic">🎮</span> 开局</div>
-  <div class="nav-item" data-tab="model"><span class="ic">🔑</span> 模型配置</div>
-  <div class="nav-item" data-tab="replay"><span class="ic">📺</span> 回放库</div>
+  <div class="logo">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--accent)">
+      <path d="M6 4h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"/>
+      <circle cx="9" cy="9" r="1.2" fill="currentColor"/>
+      <circle cx="15" cy="9" r="1.2" fill="currentColor"/>
+      <circle cx="9" cy="15" r="1.2" fill="currentColor"/>
+      <circle cx="15" cy="15" r="1.2" fill="currentColor"/>
+      <circle cx="12" cy="12" r="1.2" fill="currentColor"/>
+    </svg>
+    AI 游戏剧场
+  </div>
+  <div class="nav-item active" data-tab="play">
+    <span class="ic"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="6 4 20 12 6 20 6 4"/></svg></span>
+    开局
+  </div>
+  <div class="nav-item" data-tab="model">
+    <span class="ic"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12l7-7 7 7-7 7z"/><path d="M9 5v14"/><circle cx="16.5" cy="16.5" r="3.5"/><path d="M18.5 14.5l3-3"/></svg></span>
+    模型配置
+  </div>
+  <div class="nav-item" data-tab="replay">
+    <span class="ic"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M10 9l5 3-5 3z"/><line x1="7" y1="20" x2="17" y2="20"/></svg></span>
+    回放库
+  </div>
   <div class="nav-foot">
-    数据本地存储 · 密钥不入库<br>
-    日志输出至 out/ 目录<br>
+    密钥仅存本机 · 不入库<br>
+    日志输出至 out/<br>
     <span id="health">● 检查中…</span>
   </div>
 </aside>
@@ -168,7 +217,7 @@
     <p class="sub">选择游戏 → 调整规则参数 → 选阵容与模式 → 开跑。全程无需改代码。</p>
 
     <div class="card">
-      <h3>① 游戏与规则</h3>
+      <h3><span class="step">1</span>游戏与规则</h3>
       <div class="row">
         <div class="field">
           <label>选择游戏</label>
@@ -183,17 +232,19 @@
           <input type="number" id="seed" placeholder="如 42">
         </div>
       </div>
-      <div id="params-area" style="margin-top:10px"></div>
+      <div id="params-area" style="margin-top:8px"></div>
     </div>
 
     <div class="card">
-      <h3>② 阵容</h3>
+      <h3><span class="step">2</span>阵容</h3>
+      <div class="cast-head">
+        <div class="cast-count" id="cast-count">已选 <b>0</b> <span class="req"></span></div>
+      </div>
       <div id="cast-area" class="cast-grid"></div>
-      <p class="hint" style="font-size:11px;color:var(--dim2);margin-top:10px">点击勾选/取消 AI 演员。不同游戏对人数有要求（如海盗分金需 5 人）。</p>
     </div>
 
     <div class="card">
-      <h3>③ 模式</h3>
+      <h3><span class="step">3</span>模式</h3>
       <div class="modes" id="modes">
         <div class="mode-card mock on" data-mode="mock">
           <div class="mt">Mock 试跑</div>
@@ -202,21 +253,25 @@
         </div>
         <div class="mode-card cheap" data-mode="cheap">
           <div class="mt">Cheap 预演</div>
-          <div class="md">全员替换为廉价模型（DeepSeek-V3.2），低成本验证 AI 表现。</div>
+          <div class="md">全员替换为廉价模型，低成本验证 AI 表现。</div>
           <div class="mc">需 SiliconFlow Key</div>
         </div>
         <div class="mode-card official" data-mode="official">
           <div class="mt">正式阵容</div>
-          <div class="md">每个 AI 用各自原生模型（GPT/Claude/Gemini…），录制正式素材。</div>
+          <div class="md">每个 AI 用各自原生模型，录制正式素材。</div>
           <div class="mc">需全部厂商 Key</div>
         </div>
       </div>
     </div>
 
-    <div style="margin-bottom:18px">
-      <button class="btn" id="btn-run">▶ 开始对局</button>
-      <span id="run-hint" style="font-size:12px;color:var(--dim);margin-left:12px"></span>
+    <div style="margin-bottom:14px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+      <button class="btn" id="btn-run">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 4 20 12 6 20 6 4"/></svg>
+        开始对局
+      </button>
+      <span id="run-hint" style="font-size:12px;color:var(--dim)"></span>
     </div>
+    <div class="validate-box" id="validate-box"></div>
 
     <div class="card" id="progress-card" style="display:none">
       <h3>实时进度</h3>
@@ -232,9 +287,12 @@
     <div class="card">
       <h3>API Keys</h3>
       <div id="keys-area"></div>
-      <div style="margin-top:16px">
-        <button class="btn" id="btn-save-keys">💾 保存密钥</button>
-        <span style="font-size:12px;color:var(--dim);margin-left:12px">留空表示不修改已保存的值</span>
+      <div style="margin-top:16px;display:flex;align-items:center;gap:12px">
+        <button class="btn" id="btn-save-keys">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+          保存密钥
+        </button>
+        <span style="font-size:12px;color:var(--dim)">留空表示不修改已保存的值</span>
       </div>
     </div>
 
@@ -259,13 +317,19 @@
         </table>
       </div>
       <div style="margin-top:14px">
-        <button class="btn ghost" onclick="loadLogs()">🔄 刷新</button>
+        <button class="btn ghost" onclick="loadLogs()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+          刷新
+        </button>
       </div>
     </div>
     <div id="replay-player-view" style="display:none">
       <div class="replay-bar">
-        <span class="back" onclick="closeReplay()">← 返回列表</span>
-        <span id="replay-title" style="font-size:14px;color:var(--dim)"></span>
+        <span class="back" onclick="closeReplay()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+          返回列表
+        </span>
+        <span id="replay-title" style="font-size:13px;color:var(--dim);font-family:monospace"></span>
       </div>
       <iframe id="replay-frame"></iframe>
     </div>
@@ -278,8 +342,39 @@
 const $ = id => document.getElementById(id);
 let state = {
   games: [], personas: [], currentGame: null, mode: "mock",
-  pollTimer: null, currentJob: null,
+  pollTimer: null, currentJob: null, secrets: [],
 };
+
+// ---------- 品牌 Logo（SVG）----------
+// 每个演员对应其公司 logo 的简化矢量，配品牌色圆角底。
+const LOGOS = {
+  gpt: `<svg viewBox="0 0 32 32"><rect width="32" height="32" rx="7" fill="#10a37f"/><g transform="translate(16,16)" fill="#fff"><ellipse rx="2.6" ry="6.6" cy="-4.4"/><ellipse rx="2.6" ry="6.6" cy="-4.4" transform="rotate(60)"/><ellipse rx="2.6" ry="6.6" cy="-4.4" transform="rotate(120)"/><ellipse rx="2.6" ry="6.6" cy="-4.4" transform="rotate(180)"/><ellipse rx="2.6" ry="6.6" cy="-4.4" transform="rotate(240)"/><ellipse rx="2.6" ry="6.6" cy="-4.4" transform="rotate(300)"/><circle r="2.4"/></g></svg>`,
+  claude: `<svg viewBox="0 0 32 32"><rect width="32" height="32" rx="7" fill="#d97757"/><g transform="translate(16,16)" stroke="#fff" stroke-width="2.3" stroke-linecap="round" fill="none"><line y2="-9"/><line y2="-9" transform="rotate(45)"/><line y2="-9" transform="rotate(90)"/><line y2="-9" transform="rotate(135)"/><line y2="-9" transform="rotate(180)"/><line y2="-9" transform="rotate(225)"/><line y2="-9" transform="rotate(270)"/><line y2="-9" transform="rotate(315)"/></g></svg>`,
+  gemini: `<svg viewBox="0 0 32 32"><rect width="32" height="32" rx="7" fill="#4285f4"/><path fill="#fff" d="M16 4.5 L17.7 14.3 L27.5 16 L17.7 17.7 L16 27.5 L14.3 17.7 L4.5 16 L14.3 14.3 Z"/></svg>`,
+  deepseek: `<svg viewBox="0 0 32 32"><rect width="32" height="32" rx="7" fill="#4d6bfe"/><path fill="#fff" d="M22.5 11.5c-1.2-1.6-3.1-2.6-5.2-2.6h-7.3v13.2h7.3c2.1 0 4-1 5.2-2.6-1.3.9-2.9 1.4-4.6 1.4h-3.4V12.7h3.4c1.7 0 3.3.5 4.6 1.4z"/></svg>`,
+  grok: `<svg viewBox="0 0 32 32"><rect width="32" height="32" rx="7" fill="#1a1a1a"/><path d="M9 9 L23 23 M23 9 L9 23" stroke="#fff" stroke-width="2.6" stroke-linecap="round"/></svg>`,
+  kimi: `<svg viewBox="0 0 32 32"><rect width="32" height="32" rx="7" fill="#7c5cff"/><path fill="#fff" d="M21.5 16 a8 8 0 1 1 -8 -8 a6.2 6.2 0 1 0 8 8 z"/></svg>`,
+  qwen: `<svg viewBox="0 0 32 32"><rect width="32" height="32" rx="7" fill="#615ced"/><path fill="none" stroke="#fff" stroke-width="2.4" d="M16 8 a8 8 0 0 1 0 16 a6 6 0 0 1 0 -12 a4 4 0 0 1 0 8"/><circle cx="20" cy="20" r="1.6" fill="#fff"/></svg>`,
+};
+const FALLBACK_AVATAR = (emoji, color) =>
+  `<svg viewBox="0 0 32 32"><rect width="32" height="32" rx="7" fill="${color}22"/><text x="16" y="21" text-anchor="middle" font-size="16" fill="${color}">${emoji}</text></svg>`;
+function logoHtml(p) {
+  if (LOGOS[p.id]) return LOGOS[p.id];
+  return FALLBACK_AVATAR(p.emoji, p.color);
+}
+const VENDORS = {"gpt-5":"OpenAI","claude-sonnet":"Anthropic","gemini-pro":"Google",
+  "deepseek-chat":"DeepSeek","grok":"xAI","kimi":"Moonshot","qwen-max":"阿里云"};
+function vendorOf(m) { return VENDORS[m] || m; }
+
+// ---------- 游戏阵容约束 ----------
+// 海盗分金为 5 人经典局，固定人数；其他游戏至少 2 人。
+function gameConstraints(dir) {
+  if (dir === "pirate_gold") return {min: 5, max: 5, note: "海盗分金为 5 人经典局"};
+  if (dir === "solitary_cell") return {min: 4, max: 8, note: "建议 4-8 人"};
+  if (dir === "perudo") return {min: 2, max: 8, note: "2-8 人"};
+  if (dir === "ultimatum") return {min: 2, max: 8, note: "2-8 人"};
+  return {min: 2, max: 12, note: "至少 2 人"};
+}
 
 // ---------- 通用 ----------
 async function api(path, opts) {
@@ -293,7 +388,7 @@ function toast(msg, kind = "ok") {
   const t = $("toast");
   t.textContent = msg;
   t.className = "toast show " + kind;
-  setTimeout(() => t.className = "toast " + kind, 2600);
+  setTimeout(() => t.className = "toast " + kind, 2800);
 }
 function escapeHtml(s) {
   return String(s ?? "").replace(/[&<>"']/g,
@@ -335,21 +430,26 @@ function renderGame(dir) {
       const isFloat = typeof v === "number" && !isInt;
       const step = isFloat ? "0.01" : "1";
       const type = typeof v === "number" ? "number" : "text";
+      const min = typeof v === "number" && v > 0 ? "0" : "";
       return `<div class="param-cell"><label>${k}</label>
         <input type="${type}" data-param="${k}" data-type="${isInt?"int":isFloat?"float":"str"}"
-               value="${v}" step="${step}"></div>`;
+               value="${v}" step="${step}" ${min?`min="${min}"`:""}></div>`;
     }).join("")
   }</div>`;
   // 阵容
   $("cast-area").innerHTML = state.personas.map(p => {
     const on = g.cast.includes(p.id);
     return `<div class="cast-chip ${on?"on":""}" data-pid="${p.id}">
-      <div class="av" style="border-color:${p.color}">${p.emoji}</div>
-      <span class="nm">${p.name}</span></div>`;
+      <div class="av">${logoHtml(p)}</div>
+      <div><div class="nm">${p.name}</div><div class="vn">${vendorOf(p.model)}</div></div></div>`;
   }).join("");
   document.querySelectorAll(".cast-chip").forEach(c => {
-    c.onclick = () => c.classList.toggle("on");
+    c.onclick = () => { c.classList.toggle("on"); validateRun(); };
   });
+  document.querySelectorAll("[data-param]").forEach(inp => {
+    inp.oninput = () => validateRun();
+  });
+  validateRun();
 }
 
 document.querySelectorAll(".mode-card").forEach(m => {
@@ -357,18 +457,94 @@ document.querySelectorAll(".mode-card").forEach(m => {
     document.querySelectorAll(".mode-card").forEach(x => x.classList.remove("on"));
     m.classList.add("on");
     state.mode = m.dataset.mode;
+    validateRun();
   };
 });
 
-$("btn-run").onclick = async () => {
-  const game = $("game-select").value;
-  const seed = $("seed").value || null;
+// ---------- 配置校验 ----------
+function collectParams() {
   const params = {};
   document.querySelectorAll("[data-param]").forEach(inp => {
     const t = inp.dataset.type;
     params[inp.dataset.param] = t === "int" ? parseInt(inp.value)
       : t === "float" ? parseFloat(inp.value) : inp.value;
   });
+  return params;
+}
+function validateRun() {
+  const box = $("validate-box");
+  const btn = $("btn-run");
+  const errors = [];
+  const warns = [];
+  if (!state.currentGame) { btn.disabled = true; return; }
+
+  // 阵容人数
+  const cast = [...document.querySelectorAll(".cast-chip.on")].map(c => c.dataset.pid);
+  const c = gameConstraints(state.currentGame.dir);
+  const cc = $("cast-count");
+  cc.innerHTML = `已选 <b>${cast.length}</b> <span class="req">· ${c.note}</span>`;
+  cc.className = "cast-count" + (cast.length >= c.min && cast.length <= c.max ? " ok" : " bad");
+  if (cast.length < c.min) errors.push(`阵容人数不足：至少 ${c.min} 人，当前 ${cast.length} 人（${c.note}）`);
+  if (cast.length > c.max) errors.push(`阵容人数超限：最多 ${c.max} 人，当前 ${cast.length} 人`);
+
+  // 数值参数
+  document.querySelectorAll("[data-param]").forEach(inp => {
+    const t = inp.dataset.type;
+    const val = inp.value;
+    inp.classList.remove("invalid");
+    if (val === "" || val == null) {
+      errors.push(`参数「${inp.dataset.param}」不能为空`); inp.classList.add("invalid"); return;
+    }
+    if (t === "int" || t === "float") {
+      const n = t === "int" ? parseInt(val) : parseFloat(val);
+      if (isNaN(n)) { errors.push(`参数「${inp.dataset.param}」不是有效数字`); inp.classList.add("invalid"); return; }
+      if (n < 0) { errors.push(`参数「${inp.dataset.param}」不能为负数（当前 ${n}）`); inp.classList.add("invalid"); }
+      if (t === "int" && !Number.isInteger(parseFloat(val)))
+        warns.push(`参数「${inp.dataset.param}」应为整数，当前 ${val}`);
+    }
+  });
+
+  // 模式与密钥
+  if (state.mode === "cheap") {
+    const sf = state.secrets.find(k => k.var === "SILICONFLOW_API_KEY");
+    if (sf && !sf.set) warns.push("cheap 模式需要 SiliconFlow Key，当前未配置（可在「模型配置」添加）");
+  }
+  if (state.mode === "official") {
+    const need = state.currentGame.cast || [];
+    const missing = [];
+    const map = {gpt:"OPENAI_API_KEY", claude:"ANTHROPIC_API_KEY", gemini:"GOOGLE_API_KEY",
+      deepseek:"DEEPSEEK_API_KEY", grok:"XAI_API_KEY", kimi:"MOONSHOT_API_KEY", qwen:"DASHSCOPE_API_KEY"};
+    const sel = [...document.querySelectorAll(".cast-chip.on")].map(c => c.dataset.pid);
+    const checkList = sel.length ? sel : need;
+    for (const pid of checkList) {
+      const v = map[pid]; if (!v) continue;
+      const k = state.secrets.find(x => x.var === v);
+      if (!k || !k.set) missing.push(pid.toUpperCase());
+    }
+    if (missing.length) warns.push(`official 模式缺少部分演员的 Key：${missing.join("、")}（未配置会运行失败）`);
+  }
+
+  // 渲染
+  let html = "";
+  if (errors.length) {
+    html = `⛔ 存在 ${errors.length} 个问题，无法开跑：<ul>${errors.map(e=>`<li>${escapeHtml(e)}</li>`).join("")}</ul>`;
+    box.className = "validate-box show err";
+  } else if (warns.length) {
+    html = `⚠️ 提示：<ul>${warns.map(e=>`<li>${escapeHtml(e)}</li>`).join("")}</ul>`;
+    box.className = "validate-box show warn";
+  } else {
+    box.className = "validate-box";
+  }
+  box.innerHTML = html;
+  btn.disabled = errors.length > 0;
+  return errors.length === 0;
+}
+
+$("btn-run").onclick = async () => {
+  if (!validateRun()) { toast("请先修正配置问题", "err"); return; }
+  const game = $("game-select").value;
+  const seed = $("seed").value || null;
+  const params = collectParams();
   const cast = [...document.querySelectorAll(".cast-chip.on")].map(c => c.dataset.pid);
   $("btn-run").disabled = true;
   $("run-hint").textContent = "提交中…";
@@ -379,6 +555,7 @@ $("btn-run").onclick = async () => {
     });
     state.currentJob = res.job_id;
     $("progress-card").style.display = "block";
+    $("progress-card").scrollIntoView({behavior:"smooth", block:"nearest"});
     pollJob(res.job_id);
   } catch (e) {
     toast("启动失败：" + e.message, "err");
@@ -415,7 +592,7 @@ function renderProgress(j) {
   if (p.ready) {
     html += `<div class="stat"><span class="k">步数</span><span class="v">${p.steps}</span></div>`;
     html += `<div class="stat"><span class="k">轮次</span><span class="v dim">${p.round ?? "—"}</span></div>`;
-    html += `<div class="stat"><span class="k">最新发言</span><span class="v dim" style="font-size:15px">${escapeHtml(p.last_player || "—")}</span></div>`;
+    html += `<div class="stat"><span class="k">最新发言</span><span class="v dim" style="font-size:14px">${escapeHtml(p.last_player || "—")}</span></div>`;
     if (p.finished) {
       html += `<div class="stat"><span class="k">赢家</span><span class="v green">${escapeHtml(p.winner || "无")}</span></div>`;
     }
@@ -429,7 +606,9 @@ function renderProgress(j) {
     const cost = p.cost || {};
     const total = Object.values(cost).reduce((s, c) => s + (c.cost_usd || 0), 0);
     html += `<div style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap;align-items:center">`;
-    html += `<button class="btn" onclick="openReplay('${p.log_url}')">📺 立即回放</button>`;
+    html += `<button class="btn" onclick="openReplay('${p.log_url}')">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 4 20 12 6 20 6 4"/></svg>
+      立即回放</button>`;
     html += `<span class="cost-line">成本 ≈ $${total.toFixed(4)} · ${Object.entries(cost).map(([m,c])=>`${m}:${c.calls}次`).join(" ")||"mock 无消耗"}</span>`;
     html += `</div>`;
   }
@@ -443,6 +622,7 @@ function renderProgress(j) {
 // ---------- 模型配置 Tab ----------
 async function loadKeys() {
   const data = await api("/api/secrets");
+  state.secrets = data.keys;
   $("keys-area").innerHTML = data.keys.map(k => `
     <div class="key-row">
       <div><div class="kl">${k.label}</div><div class="kv">${k.var}</div></div>
@@ -451,14 +631,10 @@ async function loadKeys() {
     </div>`).join("");
   // 模型映射表
   $("model-table").innerHTML = state.personas.map(p => `
-    <tr><td>${p.emoji} ${p.name}</td><td><span class="pill">${p.model}</span></td>
+    <tr><td><span class="model-name"><span class="av">${logoHtml(p)}</span>${p.name}</span></td>
+    <td><span class="pill">${p.model}</span></td>
     <td>${vendorOf(p.model)}</td>
     <td style="color:var(--blue)">DeepSeek-V3.2 (SF)</td></tr>`).join("");
-}
-function vendorOf(m) {
-  const v = {"gpt-5":"OpenAI","claude-sonnet":"Anthropic","gemini-pro":"Google",
-    "deepseek-chat":"DeepSeek","grok":"xAI","kimi":"Moonshot","qwen-max":"阿里"};
-  return v[m] || m;
 }
 $("btn-save-keys").onclick = async () => {
   const payload = {};
@@ -484,7 +660,7 @@ async function loadLogs() {
     <tr><td><span class="pill">${l.game}</span></td>
     <td style="font-family:monospace;font-size:12px">${l.name}</td>
     <td>${l.mtime}</td><td>${l.size_kb} KB</td>
-    <td><button class="btn ghost" style="padding:6px 14px;font-size:12px" onclick="openReplay('${l.url}')">▶ 回放</button></td>
+    <td><button class="btn ghost" style="padding:6px 13px;font-size:12px" onclick="openReplay('${l.url}')">▶ 回放</button></td>
     </tr>`).join("");
 }
 function openReplay(logUrl) {
