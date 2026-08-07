@@ -176,14 +176,16 @@ def run_game(game_name: str, mode: str = "mock", seed: int | None = None,
 
 def _take_turn(game, state, player_id, persona, memory, client, mode, rng, logger):
     """执行一名玩家的一次行动（含重试与兜底，FR-1.4）。返回 (新状态, 事件)。"""
+    # 始终构建提示词，用于日志存档（mock 模式也构建，便于检查信息隔离）
+    prompt = game.get_prompt(state, player_id, persona, memory[player_id])
+
     if mode == "mock":
         action = rng.choice(game.legal_actions(state, player_id))
         thought, speech = rng.choice(MOCK_THOUGHTS), rng.choice(MOCK_SPEECHES)
         state, extra = game.apply(state, player_id, action)
         return state, _log_action(logger, game, state, player_id, persona,
-                                  thought, speech, action, extra)
+                                  thought, speech, action, extra, prompt)
 
-    prompt = game.get_prompt(state, player_id, persona, memory[player_id])
     last_err = None
     for attempt in range(3):
         try:
@@ -192,7 +194,7 @@ def _take_turn(game, state, player_id, persona, memory, client, mode, rng, logge
             action = resp["action"]
             state, extra = game.apply(state, player_id, action)
             event = _log_action(logger, game, state, player_id, persona,
-                                resp["thought"], resp["speech"], action, extra)
+                                resp["thought"], resp["speech"], action, extra, prompt)
             _update_memory(memory, player_id, persona, state, action)
             return state, event
         except (LLMError, game.IllegalAction, KeyError) as e:
@@ -205,7 +207,7 @@ def _take_turn(game, state, player_id, persona, memory, client, mode, rng, logge
     extra["fallback"] = str(last_err)
     return state, _log_action(logger, game, state, player_id, persona,
                               "（系统兜底：该玩家未能给出有效决策）",
-                              "（弃权/随机行动）", action, extra)
+                              "（弃权/随机行动）", action, extra, prompt)
 
 
 def _validate_response(resp: dict) -> None:
@@ -217,11 +219,12 @@ def _validate_response(resp: dict) -> None:
 
 
 def _log_action(logger, game, state, player_id, persona,
-                thought, speech, action, extra) -> dict:
+                thought, speech, action, extra, prompt="") -> dict:
     event = {"type": "action", "round": state.get("round_no"),
              "player": persona["name"], "player_id": player_id,
              "color": persona["color"], "emoji": persona["emoji"],
              "thought": thought, "speech": speech, "action": action,
+             "prompt": prompt,
              "state_after": game.display_state(state)}
     if persona.get("persona_name"):
         event["persona_name"] = persona["persona_name"]

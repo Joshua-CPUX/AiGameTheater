@@ -468,6 +468,7 @@ const LOGOS = {
   grok:     `<img src="/web/logo/grok.png?v=2"     style="width:100%;height:100%;object-fit:contain;display:block" alt="Grok">`,
   kimi:     `<img src="/web/logo/kimi.png?v=2"     style="width:100%;height:100%;object-fit:contain;display:block" alt="Kimi">`,
   qwen:     `<img src="/web/logo/Qwen.png?v=2"     style="width:100%;height:100%;object-fit:contain;display:block" alt="Qwen">`,
+  doubao:   `<img src="/web/logo/doubao.png?v=3"   style="width:100%;height:100%;object-fit:contain;display:block" alt="豆包">`,
 };
 const FALLBACK_AVATAR = (emoji, color) =>
   `<svg viewBox="0 0 32 32"><rect width="32" height="32" rx="7" fill="${color}22"/><text x="16" y="21" text-anchor="middle" font-size="16" fill="${color}">${emoji}</text></svg>`;
@@ -482,6 +483,7 @@ const PROTOCOL_LABELS = {"openai":"OpenAI","anthropic":"Anthropic","google":"Goo
 // 海盗分金为 5 人经典局，固定人数；其他游戏至少 2 人。
 function gameConstraints(dir) {
   if (dir === "pirate_gold") return {min: 5, max: 5, note: "海盗分金为 5 人经典局"};
+  if (dir === "werewolf") return {min: 8, max: 8, note: "狼人杀为 8 人固定局：3狼1预1女1猎2民"};
   if (dir === "solitary_cell") return {min: 4, max: 8, note: "建议 4-8 人"};
   if (dir === "perudo") return {min: 2, max: 8, note: "2-8 人"};
   if (dir === "ultimatum") return {min: 2, max: 8, note: "2-8 人"};

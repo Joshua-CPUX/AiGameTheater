@@ -114,6 +114,21 @@
   body.obs .bubble .speech, body.obs .player { background: rgba(23,26,35,.92); }
   /* 品牌 Logo 头像：svg / img 撑满容器 */
   .brand-av svg, .brand-av img { width: 100%; height: 100%; display: block; }
+  /* 提示词展开区 */
+  .prompt-box { margin-top: 8px; background: var(--panel); border: 1px solid var(--border);
+                border-radius: 8px; overflow: hidden; }
+  .prompt-box .prompt-head { padding: 6px 10px; font-size: 11px; color: var(--dim);
+                              cursor: pointer; user-select: none; display: flex;
+                              align-items: center; gap: 6px; background: var(--panel2); }
+  .prompt-box .prompt-head:hover { color: var(--text); }
+  .prompt-box .prompt-body { padding: 10px 12px; font-size: 12px; line-height: 1.6;
+                              color: var(--dim); white-space: pre-wrap; word-break: break-word;
+                              max-height: 400px; overflow-y: auto; font-family: "Consolas", "SF Mono", monospace; }
+  body.hide-prompt .prompt-box { display: none; }
+  .prompt-box.open .prompt-body { display: block !important; }
+  .prompt-box.open .prompt-head span:last-child::before { content: "点击收起"; }
+  .prompt-box:not(.open) .prompt-head span:last-child::before { content: "点击展开"; }
+  .prompt-box:not(.open) .prompt-head span:last-child { }
 </style>
 </head>
 <body>
@@ -146,6 +161,7 @@
   </select>
   <button id="btn-orient">竖屏</button>
   <button id="btn-obs">OBS 抠像</button>
+  <button id="btn-prompt">📝 提示词</button>
 </footer>
 
 <script>
@@ -164,6 +180,7 @@ const LOGOS = {
   grok:     `<img src="logo/grok.png?v=2"     style="width:100%;height:100%;object-fit:contain;display:block" alt="Grok">`,
   kimi:     `<img src="logo/kimi.png?v=2"     style="width:100%;height:100%;object-fit:contain;display:block" alt="Kimi">`,
   qwen:     `<img src="logo/Qwen.png?v=2"     style="width:100%;height:100%;object-fit:contain;display:block" alt="Qwen">`,
+  doubao:   `<img src="logo/doubao.png?v=3"   style="width:100%;height:100%;object-fit:contain;display:block" alt="豆包">`,
 };
 // 返回头像 HTML：优先品牌 logo，否则回退原 emoji
 function avatarOf(p, size) {
@@ -360,20 +377,35 @@ function actionLabel(a) {
   if (t === "broadcast")
     return `<div class="act-msg">📢 公开喊话：${escapeHtml(a.message)}</div>`;
   if (t === "private_chat")
-    return `<div class="act-msg">🤫 悄悄对 ${a.target} 说：${escapeHtml(a.message)}</div>`;
+    return `<div class="act-msg">🤫 悄悄对 ${playerOf(a.target).name} 说：${escapeHtml(a.message)}</div>`;
   if (t === "force_talk")
-    return `<div class="act-msg">🔫 强行对 ${a.target} 传话（对方获得手枪）：${escapeHtml(a.message)}</div>`;
+    return `<div class="act-msg">🔫 强行对 ${playerOf(a.target).name} 传话（对方获得手枪）：${escapeHtml(a.message)}</div>`;
   if (t === "shoot")
-    return `<div class="act-msg">🔫 开枪带走了 ${a.target}</div>`;
+    return `<div class="act-msg">🔫 开枪带走了 ${playerOf(a.target).name}</div>`;
+  if (t === "shoot_skip")
+    return `<div class="act-msg" style="color:var(--dim)">🔫 选择不开枪</div>`;
   if (t === "challenge")
     return `<div class="act-msg">🚨 质疑上一手的叫骰！</div>`;
-  if (t === "vote")
+  if (t === "vote") {
+    if (a.target)
+      return `<div class="act-msg">🗳️ 投票出局：${playerOf(a.target).name}</div>`;
     return `<div class="act-msg">🗳️ 投票：${a.choice === "yes" ? "赞成" : "反对"}</div>`;
+  }
+  if (t === "kill")
+    return `<div class="act-msg">🐺 狼人击杀：${playerOf(a.target).name}</div>`;
+  if (t === "check")
+    return `<div class="act-msg">🔮 预言家查验：${playerOf(a.target).name}</div>`;
+  if (t === "witch_save")
+    return `<div class="act-msg">💊 女巫使用解药救人</div>`;
+  if (t === "witch_poison")
+    return `<div class="act-msg">☠️ 女巫使用毒药毒杀 ${playerOf(a.target).name}</div>`;
+  if (t === "witch_skip")
+    return `<div class="act-msg" style="color:var(--dim)">🧪 女巫选择不使用药水</div>`;
   if (t === "respond")
     return `<div class="act-msg">${a.choice === "accept" ? "🤝 接受报价" : "🚫 拒绝报价（掀桌子）"}</div>`;
   if (t === "pass")
     return `<div class="act-msg" style="color:var(--dim)">🤐 选择沉默/弃权</div>`;
-  // bid / offer / propose / guess：金额/分配/颜色已在盘面或 speech 展示，不重复标注
+  // bid / offer / propose / guess / speak：内容已在盘面或 speech 展示，不重复标注
   return "";
 }
 
@@ -405,12 +437,19 @@ function renderEvent(e) {
     const spk = e.player_id ? playerOf(e.player_id) : null;
     const whoMark = spk ? inlineMark(spk) : (e.emoji ? e.emoji + " " : "");
     const personaTag = e.persona_name ? ` · <span style="color:var(--accent)">${escapeHtml(e.persona_name)}</span>` : "";
+    // 投票阶段不显示发言气泡（投票动作有 target 字段时跳过 speech）
+    const isVoteAction = e.action && e.action.type === "vote" && e.action.target;
+    const speechHtml = isVoteAction ? "" : `<div class="speech">${escapeHtml(e.speech)}</div>`;
+    const promptHtml = e.prompt
+      ? `<div class="prompt-box"><div class="prompt-head" onclick="this.parentElement.classList.toggle('open')">📝 发送给模型的提示词<span style="margin-left:auto"></span></div><div class="prompt-body" style="display:none">${escapeHtml(e.prompt)}</div></div>`
+      : "";
     stream.insertAdjacentHTML("beforeend",
       `<div class="${cls}"><div class="who">${whoMark}${e.player}${personaTag} · 第${e.round}轮</div>
-       <div class="speech">${escapeHtml(e.speech)}</div>
+       ${speechHtml}
        ${e.thought ? `<div class="thought">${escapeHtml(e.thought)}</div>` : ""}
        ${actMsg}
-       ${e.note ? `<div class="hl-note">${escapeHtml(e.note)}</div>` : ""}</div>` + revealHtml);
+       ${e.note ? `<div class="hl-note">${escapeHtml(e.note)}</div>` : ""}
+       ${promptHtml}</div>` + revealHtml);
   }
   stream.scrollTop = stream.scrollHeight;
   $("round-ind").textContent = e.round ? `第 ${e.round} 轮` : "";
@@ -488,6 +527,12 @@ $("btn-obs").onclick = e => {
   document.body.classList.toggle("obs");
   e.target.classList.toggle("on");
 };
+$("btn-prompt").onclick = e => {
+  document.body.classList.toggle("hide-prompt");
+  e.target.classList.toggle("on");
+};
+// 默认隐藏提示词区块，点击按钮才显示
+document.body.classList.add("hide-prompt");
 document.onkeydown = e => {
   if (e.code === "Space") { e.preventDefault(); playing ? pause() : play(); }
   if (e.code === "ArrowRight") { pause(); stepNext(); }
