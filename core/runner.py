@@ -19,7 +19,9 @@ from .logger import EventLogger, export_srt, read_events
 ROOT = Path(__file__).resolve().parent.parent
 
 SYSTEM_PROMPT = (
-    "你是一个参与博弈游戏的 AI 玩家。请完全代入给你的人设进行游戏。"
+    "你是一个参与博弈游戏的 AI 玩家。请完全代入给你的人设进行游戏，"
+    "展现鲜明的性格、情感和立场。你的每一句话和每一个决策都应体现角色特征——"
+    "在内心独白(thought)中展现真实想法和情绪波动，在公开发言(speech)中体现你的社交策略。"
     "你必须严格按要求返回 JSON（thought / speech / action 三个字段），"
     "不要输出任何 JSON 以外的内容。"
 )
@@ -31,9 +33,22 @@ MOCK_SPEECHES = ["（mock）随便出一手。", "（mock）我跟。", "（mock
                  "（mock）你们随意。"]
 
 
-def load_personas() -> dict:
+def load_actors() -> dict:
+    """加载演员表（品牌身份）：{actor_id: {id, name, color, emoji}}。"""
     with open(ROOT / "core" / "personas.yaml", encoding="utf-8") as f:
-        return {p["id"]: p for p in yaml.safe_load(f)["personas"]}
+        return {a["id"]: a for a in yaml.safe_load(f)["actors"]}
+
+
+def load_persona_library() -> list[dict]:
+    """加载人设库：[{id, name, personality}, ...]，可在控制台增删改。"""
+    with open(ROOT / "core" / "personas.yaml", encoding="utf-8") as f:
+        return yaml.safe_load(f).get("personas", [])
+
+
+def load_default_bindings() -> dict:
+    """加载默认绑定：{actor_id: persona_id}。"""
+    with open(ROOT / "core" / "personas.yaml", encoding="utf-8") as f:
+        return yaml.safe_load(f).get("default_bindings", {})
 
 
 def load_game(game_name: str):
@@ -48,25 +63,48 @@ def load_game(game_name: str):
     return module, config
 
 
-def build_cast(config: dict, personas: dict) -> list[dict]:
+def build_cast(config: dict, actors: dict, persona_library: list[dict],
+               persona_map: dict | None = None) -> list[dict]:
+    """组装阵容：演员品牌身份 + 绑定的人设描述。
+
+    persona_map: {actor_id: persona_id}，为 None 时用 default_bindings。
+    """
+    bindings = persona_map or load_default_bindings()
+    persona_by_id = {p["id"]: p for p in persona_library}
     cast = []
     for pid in config["cast"]:
-        if pid not in personas:
-            raise ValueError(f"阵容中的 {pid!r} 不在 personas.yaml 里")
-        cast.append(personas[pid])
+        if pid not in actors:
+            raise ValueError(f"阵容中的 {pid!r} 不在 personas.yaml 的 actors 里")
+        actor = dict(actors[pid])  # id, name, color, emoji
+        persona_id = bindings.get(pid)
+        persona = persona_by_id.get(persona_id, {})
+        actor["personality"] = persona.get("personality", "")
+        actor["persona_name"] = persona.get("name", "")
+        actor["persona_id"] = persona_id or ""
+        cast.append(actor)
     return cast
 
 
+# ---------------------------------------------------------------- 核心流程
+
 def run_game(game_name: str, mode: str = "mock", seed: int | None = None,
              out_dir: str | Path | None = None,
-             config_override: dict | None = None) -> dict:
-    """跑一局游戏。mode: mock / cheap / official。返回对局摘要。"""
+             config_override: dict | None = None,
+             provider_map: dict | None = None,
+             persona_map: dict | None = None) -> dict:
+    """跑一局游戏。mode: mock / cheap / official。返回对局摘要。
+
+    provider_map: {actor_id: provider_config_dict}，非 mock 模式必须提供。
+    persona_map: {actor_id: persona_id}，为 None 时用 default_bindings。
+    """
     rng = random.Random(seed)
     game, config = load_game(game_name)
     if config_override:
         config.update(config_override)
-    personas = load_personas()
-    cast = build_cast(config, personas)
+    actors = load_actors()
+    persona_library = load_persona_library()
+
+    cast = build_cast(config, actors, persona_library, persona_map)
 
     # 游戏内部只认 players 列表（FR-1.1 接口契约）；seed 注入供游戏内随机使用
     game_config = dict(config)
@@ -78,19 +116,30 @@ def run_game(game_name: str, mode: str = "mock", seed: int | None = None,
     out_prefix = out_dir / f"{stamp}_{game_name}"
     tracker = CostTracker()
 
-    # 真实模式：为每个演员建立专属客户端（绑定各自模型，FR-3.1）
+    # 真实模式：为每个演员用其 provider 配置创建客户端（FR-3.1）
     clients = {}
     if mode != "mock":
-        cheap = mode == "cheap"
+        if not provider_map:
+            raise ValueError("非 mock 模式必须提供 provider_map（演员→模型配置）")
         for c in cast:
-            clients[c["id"]] = make_client(c["model"], cheap=cheap, tracker=tracker)
+            pid = c["id"]
+            if pid not in provider_map:
+                raise ValueError(f"演员 {pid!r} 未分配 provider，请在控制台配置")
+            clients[pid] = make_client(provider_map[pid], tracker=tracker)
 
     persona_by_id = {c["id"]: c for c in cast}
     memory: dict[str, list[str]] = {c["id"]: [] for c in cast}
 
     with EventLogger(f"{out_prefix}.jsonl") as logger:
-        logger.log({"type": "meta", "mode": mode, "seed": seed,
-                    **game.game_meta(game_config, cast)})
+        meta_event = {"type": "meta", "mode": mode, "seed": seed,
+                       **game.game_meta(game_config, cast)}
+        # 给 players 补上 persona_name（game_meta 不含此字段）
+        plookup = {c["id"]: c for c in cast}
+        for p in meta_event.get("players", []):
+            pn = plookup.get(p["id"], {}).get("persona_name", "")
+            if pn:
+                p["persona_name"] = pn
+        logger.log(meta_event)
 
         state = game.initial_state(game_config)
         steps, max_steps = 0, 2000  # 安全上限，防死循环
@@ -104,7 +153,6 @@ def run_game(game_name: str, mode: str = "mock", seed: int | None = None,
                 state, event = _take_turn(
                     game, state, player_id, persona, memory,
                     clients.get(player_id), mode, rng, logger)
-            # 防止极端情况下的无限循环
 
         winner = game.is_terminal(state)
         end_event = {"type": "game_end", "winner": winner,
@@ -175,8 +223,10 @@ def _log_action(logger, game, state, player_id, persona,
              "color": persona["color"], "emoji": persona["emoji"],
              "thought": thought, "speech": speech, "action": action,
              "state_after": game.display_state(state)}
+    if persona.get("persona_name"):
+        event["persona_name"] = persona["persona_name"]
     if extra.get("highlight"):
-        event["highlight"] = True
+        event["highlight"] = extra["highlight"]
         event["note"] = extra["highlight"]
     if extra.get("fallback"):
         event["fallback"] = extra["fallback"]

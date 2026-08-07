@@ -1,5 +1,8 @@
 # 最后通牒 · 对局配置
 name: 最后通牒 · AI 会掀桌子吗
+rules: |
+  每轮随机配对两人：提议者决定一笔钱中分给对方多少，对方只能接受或拒绝。
+  接受则按方案分钱，拒绝则两人一分都拿不到。多轮轮换，累计收益最高者获胜。
 pot: 100
 rounds: 14        # 7 人 × 2 轮提议
 cast: [gpt, claude, gemini, deepseek, grok, kimi, qwen]

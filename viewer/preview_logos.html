@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>Logo 预览</title>
+<style>
+  body { background: #0d0f14; color: #e6e8ee; font-family: "PingFang SC","Microsoft YaHei",sans-serif; padding: 30px; }
+  h2 { font-size: 16px; color: #8b90a0; margin: 24px 0 12px; font-weight: 600; }
+  .row { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
+  .item { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+  .item .label { font-size: 11px; color: #5f6473; }
+  /* 36px 圆形（回放侧边栏） */
+  .av36 { width:36px;height:36px;border-radius:50%;overflow:hidden;display:flex;align-items:center;justify-content:center;box-shadow:inset 0 0 0 1px rgba(255,255,255,.08);background:#1b1f2a; }
+  .av36 img { width:100%;height:100%;object-fit:contain;display:block; }
+  /* 28px 圆角矩形（控制台阵容卡片） */
+  .av28 { width:28px;height:28px;border-radius:7px;overflow:hidden;box-shadow:inset 0 0 0 1px rgba(255,255,255,.08);background:#1b1f2a; }
+  .av28 img { width:100%;height:100%;object-fit:contain;display:block; }
+  /* 22px 圆角矩形（模型表格） */
+  .av22 { width:22px;height:22px;border-radius:5px;overflow:hidden;box-shadow:inset 0 0 0 1px rgba(255,255,255,.08);background:#1b1f2a; }
+  .av22 img { width:100%;height:100%;object-fit:contain;display:block; }
+  /* 18px 行内小图标 */
+  .av18 { width:18px;height:18px;border-radius:4px;overflow:hidden;display:inline-flex;vertical-align:-3px;box-shadow:inset 0 0 0 1px rgba(255,255,255,.08);background:#1b1f2a; }
+  .av18 img { width:100%;height:100%;object-fit:contain;display:block; }
+  /* 模拟阵容卡片 */
+  .chip { display:flex;align-items:center;gap:10px;padding:9px 11px;background:#1b1f2a;border:1px solid #262b38;border-radius:9px;border-color:#ffd166;background:rgba(255,209,102,.08); }
+  .chip .nm { font-size:13px;font-weight:500;color:#e6e8ee; }
+  .chip .vn { font-size:10.5px;color:#5f6473; }
+</style>
+</head>
+<body>
+  <h2>36px 圆形头像（回放页侧边栏）</h2>
+  <div class="row" id="r36"></div>
+
+  <h2>28px 圆角矩形（控制台阵容卡片）</h2>
+  <div class="row" id="r28"></div>
+
+  <h2>22px 圆角矩形（模型配置表格）</h2>
+  <div class="row" id="r22"></div>
+
+  <h2>18px 行内小图标（盘面标题）</h2>
+  <div class="row" id="r18"></div>
+
+  <h2>阵容卡片完整效果</h2>
+  <div class="row" id="chips"></div>
+
+<script>
+const logos = [
+  ['gpt',      'GPT',      'OpenAI',    'logo/chatgpt.png'],
+  ['claude',   'Claude',   'Anthropic', 'logo/claude.png'],
+  ['gemini',   'Gemini',   'Google',    'logo/gemini.png'],
+  ['deepseek', 'DeepSeek', 'DeepSeek',  'logo/deepseek.png'],
+  ['grok',     'Grok',     'xAI',       'logo/grok.png'],
+  ['kimi',     'Kimi',     'Moonshot',  'logo/kimi.png'],
+  ['qwen',     'Qwen',     '阿里云',     'logo/Qwen.png'],
+];
+
+function makeImg(src) {
+  return `<img src="${src}" style="width:100%;height:100%;object-fit:contain;display:block">`;
+}
+
+function fill(id, size, cls) {
+  document.getElementById(id).innerHTML = logos.map(([k,n,v,src]) =>
+    `<div class="item"><div class="${cls}">${makeImg(src)}</div><span class="label">${n}</span></div>`
+  ).join('');
+}
+
+fill('r36', 36, 'av36');
+fill('r28', 28, 'av28');
+fill('r22', 22, 'av22');
+fill('r18', 18, 'av18');
+
+document.getElementById('chips').innerHTML = logos.map(([k,n,v,src]) =>
+  `<div class="chip"><div class="av28">${makeImg(src)}</div><div><div class="nm">${n}</div><div class="vn">${v}</div></div></div>`
+).join('');
+</script>
+</body>
+</html>

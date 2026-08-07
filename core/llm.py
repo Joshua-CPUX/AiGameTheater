@@ -1,15 +1,14 @@
-"""多厂商 LLM 适配层。
+"""多厂商 LLM 适配层（协议驱动，不含任何硬编码厂商信息）。
 
 统一接口：LLMClient.complete_json(system, user) -> dict
 - 优先使用各厂商原生结构化输出能力（FR-2.2）
 - 失败自动重试，429 指数退避
 - 全程累计 token 消耗与成本（FR-2.4）
-- API Key 仅从环境变量读取（FR-2.3）
+- API Key / base_url / model 全部由调用方传入，本模块只负责协议适配和调用
 """
 from __future__ import annotations
 
 import json
-import os
 import re
 import time
 from dataclasses import dataclass, field
@@ -53,18 +52,7 @@ def extract_json(text: str) -> dict:
 
 # ---------------------------------------------------------------- 成本
 
-# 价格表：美元 / 百万 token（2026-08 口径，可按季度更新，FR-2.4）
-PRICING = {
-    "gpt-5":        {"input": 5.00, "output": 30.00},
-    "claude-sonnet": {"input": 3.00, "output": 15.00},
-    "gemini-pro":   {"input": 2.50, "output": 15.00},
-    "deepseek-chat": {"input": 0.30, "output": 0.90},
-    "deepseek-ai/DeepSeek-V3.2": {"input": 0.28, "output": 0.42},  # SiliconFlow 托管价（约 ¥2/¥3 每 M）
-    "grok":         {"input": 3.00, "output": 15.00},
-    "kimi":         {"input": 0.60, "output": 2.50},
-    "qwen-max":     {"input": 0.40, "output": 1.20},
-    "default":      {"input": 3.00, "output": 15.00},
-}
+DEFAULT_PRICING = {"input": 3.00, "output": 15.00}  # 美元 / 百万 token
 
 
 @dataclass
@@ -73,30 +61,34 @@ class Usage:
     output_tokens: int = 0
     calls: int = 0
     retries: int = 0
+    pricing: dict = field(default_factory=lambda: dict(DEFAULT_PRICING))
 
     def add(self, input_tokens: int, output_tokens: int) -> None:
         self.input_tokens += input_tokens
         self.output_tokens += output_tokens
         self.calls += 1
 
-    def cost_usd(self, model: str) -> float:
-        price = PRICING.get(model, PRICING["default"])
-        return (self.input_tokens * price["input"]
-                + self.output_tokens * price["output"]) / 1_000_000
+    def cost_usd(self) -> float:
+        return (self.input_tokens * self.pricing.get("input", 3.0)
+                + self.output_tokens * self.pricing.get("output", 15.0)) / 1_000_000
 
 
 @dataclass
 class CostTracker:
     by_model: dict = field(default_factory=dict)
 
-    def record(self, model: str, input_tokens: int, output_tokens: int) -> None:
-        self.by_model.setdefault(model, Usage()).add(input_tokens, output_tokens)
+    def record(self, model: str, input_tokens: int, output_tokens: int,
+               pricing: dict | None = None) -> None:
+        u = self.by_model.setdefault(model, Usage())
+        if pricing:
+            u.pricing = pricing
+        u.add(input_tokens, output_tokens)
 
     def report(self) -> str:
         lines = ["===== 本局成本报告 ====="]
         total = 0.0
         for model, u in self.by_model.items():
-            cost = u.cost_usd(model)
+            cost = u.cost_usd()
             total += cost
             lines.append(f"{model}: {u.calls} 次调用, "
                          f"输入 {u.input_tokens} tok / 输出 {u.output_tokens} tok, "
@@ -106,45 +98,44 @@ class CostTracker:
 
     def to_dict(self) -> dict:
         return {m: {"calls": u.calls, "input": u.input_tokens,
-                    "output": u.output_tokens, "cost_usd": round(u.cost_usd(m), 4)}
+                    "output": u.output_tokens, "cost_usd": round(u.cost_usd(), 4)}
                 for m, u in self.by_model.items()}
 
 
 # ---------------------------------------------------------------- 客户端
 
+# 协议 -> 默认完整端点 URL（仅当用户未填 base_url 时兜底）
+# 用户填写的 base_url 应为完整 API 端点地址，程序不再拼接路径
+_DEFAULT_BASE_URLS = {
+    "openai": "https://api.openai.com/v1/chat/completions",
+    "anthropic": "https://api.anthropic.com/v1/messages",
+    "google": "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent",
+}
+
+
 class LLMClient:
     """统一 LLM 调用客户端。
 
-    vendor: "openai_compatible" | "anthropic" | "google"
+    所有连接信息由 provider 配置传入，本类只做协议适配 + HTTP 调用。
+    protocol: "openai" | "anthropic" | "google"
     """
 
-    def __init__(self, vendor: str, model: str, api_key: str | None = None,
+    def __init__(self, protocol: str, model: str, api_key: str,
                  base_url: str | None = None, temperature: float = 0.8,
-                 max_retries: int = 3, tracker: CostTracker | None = None):
-        self.vendor = vendor
+                 max_retries: int = 3, tracker: CostTracker | None = None,
+                 pricing: dict | None = None):
+        self.protocol = protocol
         self.model = model
+        self.api_key = api_key
         self.temperature = temperature
         self.max_retries = max_retries
         self.tracker = tracker or CostTracker()
-        self.api_key = api_key or self._key_from_env()
-        self.base_url = base_url or self._default_base_url()
+        self.pricing = pricing or dict(DEFAULT_PRICING)
+        self.base_url = base_url or _DEFAULT_BASE_URLS.get(protocol, "")
         if not self.api_key:
-            raise LLMError(f"缺少 API Key：请在环境变量 {self._env_key_name()} 中配置")
-
-    # ---- 配置辅助 ----
-
-    def _env_key_name(self) -> str:
-        return {"openai_compatible": "OPENAI_API_KEY",
-                "anthropic": "ANTHROPIC_API_KEY",
-                "google": "GOOGLE_API_KEY"}[self.vendor]
-
-    def _key_from_env(self) -> str | None:
-        return os.environ.get(self._env_key_name())
-
-    def _default_base_url(self) -> str:
-        return {"openai_compatible": "https://api.openai.com/v1",
-                "anthropic": "https://api.anthropic.com",
-                "google": "https://generativelanguage.googleapis.com"}[self.vendor]
+            raise LLMError(f"缺少 API Key（protocol={protocol}, model={model}）")
+        if not self.base_url:
+            raise LLMError(f"缺少 base_url（protocol={protocol}）")
 
     # ---- 主接口 ----
 
@@ -155,7 +146,7 @@ class LLMClient:
             try:
                 text, usage = self._raw_call(system, user)
                 if usage:
-                    self.tracker.record(self.model, usage[0], usage[1])
+                    self.tracker.record(self.model, usage[0], usage[1], self.pricing)
                 return extract_json(text)
             except LLMError as e:
                 last_err = e
@@ -165,27 +156,27 @@ class LLMClient:
             time.sleep(min(2 ** attempt, 8))  # 指数退避
         raise LLMError(f"模型 {self.model} 连续 {self.max_retries} 次失败: {last_err}")
 
-    # ---- 厂商适配 ----
+    # ---- 协议适配 ----
 
     def _raw_call(self, system: str, user: str) -> tuple[str, tuple[int, int] | None]:
-        if self.vendor == "openai_compatible":
+        if self.protocol == "openai":
             return self._call_openai(system, user)
-        if self.vendor == "anthropic":
+        if self.protocol == "anthropic":
             return self._call_anthropic(system, user)
-        if self.vendor == "google":
+        if self.protocol == "google":
             return self._call_google(system, user)
-        raise LLMError(f"unknown vendor: {self.vendor}")
+        raise LLMError(f"unknown protocol: {self.protocol}")
 
     def _call_openai(self, system: str, user: str) -> tuple[str, tuple[int, int] | None]:
         resp = requests.post(
-            f"{self.base_url}/chat/completions",
+            self.base_url,
             headers={"Authorization": f"Bearer {self.api_key}"},
             json={
                 "model": self.model,
                 "messages": [{"role": "system", "content": system},
                              {"role": "user", "content": user}],
                 "temperature": self.temperature,
-                # 原生结构化输出（FR-2.2）：OpenAI / DeepSeek 均支持
+                # 原生结构化输出（FR-2.2）：OpenAI / DeepSeek 等兼容服务均支持
                 "response_format": {"type": "json_object"},
             },
             timeout=120,
@@ -210,7 +201,7 @@ class LLMClient:
             "required": ["thought", "speech", "action"],
         }
         resp = requests.post(
-            f"{self.base_url}/v1/messages",
+            self.base_url,
             headers={"x-api-key": self.api_key,
                      "anthropic-version": "2023-06-01",
                      "content-type": "application/json"},
@@ -237,8 +228,9 @@ class LLMClient:
         raise LLMError("anthropic response missing tool_use block")
 
     def _call_google(self, system: str, user: str) -> tuple[str, tuple[int, int] | None]:
+        url = self.base_url.replace("{model}", self.model)
         resp = requests.post(
-            f"{self.base_url}/v1beta/models/{self.model}:generateContent",
+            url,
             params={"key": self.api_key},
             json={
                 "systemInstruction": {"parts": [{"text": system}]},
@@ -263,42 +255,25 @@ class LLMClient:
 
 # ---------------------------------------------------------------- 工厂
 
-# 人设模型名 -> (vendor, model, base_url)；base_url 为 None 时用厂商默认
-MODEL_REGISTRY = {
-    "gpt-5":         ("openai_compatible", "gpt-5", None),
-    "claude-sonnet": ("anthropic", "claude-sonnet-4-5", None),
-    "gemini-pro":    ("google", "gemini-2.5-pro", None),
-    "deepseek-chat": ("openai_compatible", "deepseek-chat",
-                      "https://api.deepseek.com/v1"),
-    "grok":          ("openai_compatible", "grok-4", "https://api.x.ai/v1"),
-    "kimi":          ("openai_compatible", "kimi-k2", "https://api.moonshot.cn/v1"),
-    "qwen-max":      ("openai_compatible", "qwen-max",
-                      "https://dashscope.aliyuncs.com/compatible-mode/v1"),
-    # SiliconFlow 托管的 DeepSeek-V3.2（国内可达，cheap 模式默认）
-    "deepseek-sf":   ("openai_compatible", "deepseek-ai/DeepSeek-V3.2",
-                      "https://api.siliconflow.cn/v1"),
-}
+def make_client(provider: dict, tracker: CostTracker | None = None) -> LLMClient:
+    """根据用户配置的 provider 字典创建 LLMClient。
 
-CHEAP_MODEL = "deepseek-sf"  # --cheap 模式全员替换（FR-2.5）
-
-
-def make_client(persona_model: str, cheap: bool = False,
-                tracker: CostTracker | None = None) -> LLMClient:
-    model_key = CHEAP_MODEL if cheap else persona_model
-    if model_key not in MODEL_REGISTRY:
-        raise LLMError(f"未注册的模型: {model_key}（可选：{list(MODEL_REGISTRY)}）")
-    vendor, model, base_url = MODEL_REGISTRY[model_key]
-    # DeepSeek 等第三方 OpenAI 兼容服务走各自的环境变量
-    api_key = None
-    if base_url and "deepseek" in base_url:
-        api_key = os.environ.get("DEEPSEEK_API_KEY")
-    elif base_url and "siliconflow" in base_url:
-        api_key = os.environ.get("SILICONFLOW_API_KEY")
-    elif base_url and "x.ai" in base_url:
-        api_key = os.environ.get("XAI_API_KEY")
-    elif base_url and "moonshot" in base_url:
-        api_key = os.environ.get("MOONSHOT_API_KEY")
-    elif base_url and "dashscope" in base_url:
-        api_key = os.environ.get("DASHSCOPE_API_KEY")
-    return LLMClient(vendor=vendor, model=model, api_key=api_key,
-                     base_url=base_url, tracker=tracker)
+    provider 结构:
+      {
+        "id":       "openai-gpt5",         # 唯一标识
+        "name":     "OpenAI GPT-5",        # 显示名
+        "protocol": "openai",              # openai | anthropic | google
+        "base_url": "https://...",         # API 地址
+        "model":    "gpt-5",               # 模型 ID
+        "api_key":  "sk-...",              # 密钥
+        "pricing":  {"input": 5.0, "output": 30.0}  # 可选，美元/百万token
+      }
+    """
+    return LLMClient(
+        protocol=provider["protocol"],
+        model=provider["model"],
+        api_key=provider.get("api_key", ""),
+        base_url=provider.get("base_url"),
+        tracker=tracker,
+        pricing=provider.get("pricing"),
+    )

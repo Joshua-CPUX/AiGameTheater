@@ -76,19 +76,23 @@
   .cast-count .req { color: var(--dim2); }
   .cast-count.ok b { color: var(--green); }
   .cast-count.bad b { color: var(--red); }
-  .cast-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 8px; }
-  .cast-chip { display: flex; align-items: center; gap: 10px; padding: 9px 11px;
+  .cast-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px; }
+  .cast-chip { display: flex; flex-direction: column; gap: 8px; padding: 9px 11px;
                background: var(--panel2); border: 1px solid var(--border);
                border-radius: 9px; cursor: pointer; transition: all .15s; user-select: none; }
   .cast-chip:hover { border-color: var(--border2); background: var(--panel3); }
   .cast-chip.on { border-color: var(--accent); background: rgba(255,209,102,.08); }
+  .cast-chip .chip-head { display: flex; align-items: center; gap: 10px; }
   .cast-chip .av { width: 28px; height: 28px; border-radius: 7px; overflow: hidden;
                    flex-shrink: 0; box-shadow: inset 0 0 0 1px rgba(255,255,255,.08); }
-  .cast-chip .av svg { width: 100%; height: 100%; display: block; }
+  .cast-chip .av svg, .cast-chip .av img { width: 100%; height: 100%; display: block; }
   .cast-chip .nm { font-size: 13px; font-weight: 500; }
   .cast-chip .vn { font-size: 10.5px; color: var(--dim2); margin-top: 1px; }
+  .cast-chip .selects { display: flex; gap: 5px; align-items: center; }
+  .cast-chip .selects > div { flex: 1; min-width: 0; }
+  .cast-chip .selects select { width: 100%; min-width: 0; padding: 4px 6px; font-size: 11px; }
   /* 模式 */
-  .modes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .modes { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
   .mode-card { padding: 13px 14px; border: 1px solid var(--border); border-radius: 9px;
                cursor: pointer; transition: all .15s; background: var(--panel2); }
   .mode-card:hover { border-color: var(--border2); }
@@ -97,8 +101,7 @@
   .mode-card .md { font-size: 11px; color: var(--dim); line-height: 1.5; min-height: 33px; }
   .mode-card .mc { font-size: 11px; margin-top: 7px; font-weight: 500; }
   .mode-card.mock .mc { color: var(--green); }
-  .mode-card.cheap .mc { color: var(--blue); }
-  .mode-card.official .mc { color: var(--accent); }
+  .mode-card.real .mc { color: var(--accent); }
   /* 校验提示 */
   .validate-box { margin-top: 14px; padding: 11px 14px; border-radius: 8px;
                   font-size: 12.5px; line-height: 1.6; display: none; }
@@ -134,15 +137,55 @@
   .badge.run { background: rgba(96,165,250,.15); color: var(--blue); }
   .badge.done { background: rgba(74,222,128,.15); color: var(--green); }
   .badge.err { background: rgba(248,113,113,.15); color: var(--red); }
-  /* 密钥 */
-  .key-row { display: grid; grid-template-columns: 1.4fr 2fr 90px; gap: 12px;
-             align-items: center; padding: 11px 0; border-bottom: 1px solid var(--border); }
-  .key-row:last-child { border: none; }
-  .key-row .kl { font-size: 13px; display: flex; align-items: center; gap: 8px; }
-  .key-row .kv { font-size: 11px; color: var(--dim2); margin-top: 2px; font-family: monospace; }
-  .key-status { font-size: 11px; text-align: right; font-weight: 600; }
-  .key-status.set { color: var(--green); }
-  .key-status.unset { color: var(--dim2); }
+  /* Provider 配置 */
+  .prov-row { display: flex; align-items: center; gap: 12px; padding: 12px 0;
+              border-bottom: 1px solid var(--border); }
+  .prov-row:last-child { border: none; }
+  .prov-info { flex: 1; min-width: 0; }
+  .prov-name { font-size: 13.5px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+  .prov-meta { font-size: 11.5px; color: var(--dim); margin-top: 3px;
+               display: flex; gap: 10px; flex-wrap: wrap; }
+  .prov-meta code { font-size: 11px; }
+  .prov-actions { display: flex; gap: 6px; flex-shrink: 0; }
+  .prov-actions button { padding: 5px 10px; font-size: 12px; }
+  .prov-form { background: var(--panel2); border: 1px solid var(--border2);
+               border-radius: 9px; padding: 16px; margin-top: 14px; }
+  .prov-form .form-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
+  .prov-form .form-cell label { font-size: 11.5px; color: var(--dim); margin-bottom: 5px; display: block; }
+  .prov-form .form-cell .hint { font-size: 10.5px; color: var(--dim2); margin-top: 3px; }
+  .prov-form .form-actions { margin-top: 14px; display: flex; gap: 10px; align-items: center; }
+  .proto-badge { font-size: 10px; padding: 2px 7px; border-radius: 4px; font-weight: 600;
+                 text-transform: uppercase; letter-spacing: .5px; }
+  .proto-badge.openai { background: rgba(16,163,127,.18); color: #10a37f; }
+  .proto-badge.anthropic { background: rgba(217,119,87,.18); color: #d97757; }
+  .proto-badge.google { background: rgba(66,133,244,.18); color: #4285f4; }
+  /* 人设库 */
+  .persona-row { display: flex; align-items: flex-start; gap: 12px; padding: 12px 0;
+                 border-bottom: 1px solid var(--border); }
+  .persona-row:last-child { border: none; }
+  .persona-info { flex: 1; min-width: 0; }
+  .persona-name { font-size: 13.5px; font-weight: 600; }
+  .persona-desc { font-size: 12px; color: var(--dim); margin-top: 4px; line-height: 1.5;
+                  white-space: pre-wrap; max-height: 60px; overflow: hidden;
+                  text-overflow: ellipsis; }
+  .persona-actions { display: flex; gap: 6px; flex-shrink: 0; }
+  .persona-actions button { padding: 5px 10px; font-size: 12px; }
+  .persona-form { background: var(--panel2); border: 1px solid var(--border2);
+                  border-radius: 9px; padding: 16px; margin-top: 14px; }
+  .persona-form textarea { width: 100%; min-height: 100px; background: var(--panel);
+                           border: 1px solid var(--border); color: var(--text);
+                           padding: 10px 12px; border-radius: 7px; font-size: 13px;
+                           line-height: 1.6; resize: vertical; outline: none;
+                           font-family: inherit; }
+  .persona-form textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(255,209,102,.1); }
+  .persona-form .form-actions { margin-top: 14px; display: flex; gap: 10px; align-items: center; }
+  .bind-row { display: flex; align-items: center; gap: 12px; padding: 8px 0;
+              border-bottom: 1px solid var(--border); }
+  .bind-row:last-child { border: none; }
+  .bind-actor { display: flex; align-items: center; gap: 8px; min-width: 140px; }
+  .bind-actor .av { width: 24px; height: 24px; border-radius: 5px; overflow: hidden;
+                    box-shadow: inset 0 0 0 1px rgba(255,255,255,.08); }
+  .bind-actor .av img, .bind-actor .av svg { width: 100%; height: 100%; display: block; }
   /* 表格 */
   table { width: 100%; border-collapse: collapse; }
   th, td { text-align: left; padding: 10px 12px; font-size: 13px; border-bottom: 1px solid var(--border); }
@@ -155,7 +198,7 @@
   .model-name { display: inline-flex; align-items: center; gap: 6px; }
   .model-name .av { width: 22px; height: 22px; border-radius: 5px; overflow: hidden;
                     box-shadow: inset 0 0 0 1px rgba(255,255,255,.08); }
-  .model-name .av svg { width: 100%; height: 100%; display: block; }
+  .model-name .av svg, .model-name .av img { width: 100%; height: 100%; display: block; }
   /* 回放 iframe — 全宽全高 */
   #replay-frame { width: 100%; height: calc(100vh - 110px); border: 1px solid var(--border);
                   border-radius: 10px; background: var(--bg); }
@@ -170,7 +213,45 @@
   .toast.show { opacity: 1; transform: none; }
   .toast.ok { border-color: var(--green); }
   .toast.err { border-color: var(--red); }
+  /* 自定义确认弹窗 */
+  .confirm-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.55);
+                     backdrop-filter: blur(2px); z-index: 200; display: flex;
+                     align-items: center; justify-content: center; opacity: 0;
+                     pointer-events: none; transition: opacity .2s; }
+  .confirm-overlay.show { opacity: 1; pointer-events: auto; }
+  .confirm-box { background: var(--panel); border: 1px solid var(--border2);
+                 border-radius: 12px; padding: 22px 24px; width: 360px; max-width: 90vw;
+                 box-shadow: 0 12px 48px rgba(0,0,0,.6); transform: scale(.95);
+                 transition: transform .2s; }
+  .confirm-overlay.show .confirm-box { transform: none; }
+  .confirm-box .cf-icon { width: 40px; height: 40px; border-radius: 50%;
+                          background: rgba(248,113,113,.12); display: flex;
+                          align-items: center; justify-content: center; font-size: 20px;
+                          margin-bottom: 14px; }
+  .confirm-box .cf-title { font-size: 15px; font-weight: 600; margin-bottom: 6px; }
+  .confirm-box .cf-msg { font-size: 13px; color: var(--dim); line-height: 1.6;
+                         white-space: pre-wrap; }
+  .confirm-box .cf-actions { display: flex; gap: 10px; justify-content: flex-end;
+                             margin-top: 20px; }
+  .confirm-box .cf-actions button { padding: 8px 18px; border-radius: 8px; font-size: 13px;
+                                     cursor: pointer; border: none; font-family: inherit; }
+  .confirm-box .cf-no { background: var(--panel2); color: var(--text);
+                        border: 1px solid var(--border); }
+  .confirm-box .cf-no:hover { background: var(--panel3); }
+  .confirm-box .cf-yes { background: var(--red); color: #fff; font-weight: 600; }
+  .confirm-box .cf-yes:hover { background: #ef4444; }
   .cost-line { font-size: 12px; color: var(--dim); font-family: monospace; }
+  /* 游戏规则 */
+  .rules-box { background: var(--panel2); border: 1px solid var(--border);
+               border-radius: 8px; padding: 12px 14px; margin-top: 10px;
+               font-size: 12.5px; line-height: 1.7; color: var(--dim);
+               white-space: pre-wrap; display: none; }
+  .rules-box.show { display: block; }
+  .rules-toggle { font-size: 12px; color: var(--accent); cursor: pointer;
+                  display: inline-flex; align-items: center; gap: 4px; margin-top: 8px; }
+  /* 回放库操作 */
+  .log-actions { display: flex; gap: 4px; }
+  .log-actions button { padding: 5px 10px; font-size: 11.5px; }
   /* 滚动条 */
   ::-webkit-scrollbar { width: 9px; height: 9px; }
   ::-webkit-scrollbar-track { background: transparent; }
@@ -195,6 +276,10 @@
     <span class="ic"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="6 4 20 12 6 20 6 4"/></svg></span>
     开局
   </div>
+  <div class="nav-item" data-tab="persona">
+    <span class="ic"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>
+    人设库
+  </div>
   <div class="nav-item" data-tab="model">
     <span class="ic"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12l7-7 7 7-7 7z"/><path d="M9 5v14"/><circle cx="16.5" cy="16.5" r="3.5"/><path d="M18.5 14.5l3-3"/></svg></span>
     模型配置
@@ -204,7 +289,7 @@
     回放库
   </div>
   <div class="nav-foot">
-    密钥仅存本机 · 不入库<br>
+    Provider 配置仅存本机 · 不入库<br>
     日志输出至 out/<br>
     <span id="health">● 检查中…</span>
   </div>
@@ -233,6 +318,11 @@
         </div>
       </div>
       <div id="params-area" style="margin-top:8px"></div>
+      <div class="rules-toggle" id="rules-toggle" onclick="toggleRules()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12" y2="17"/></svg>
+        <span id="rules-toggle-text">显示规则</span>
+      </div>
+      <div class="rules-box" id="rules-box"></div>
     </div>
 
     <div class="card">
@@ -251,15 +341,10 @@
           <div class="md">零成本跑通流程，用随机合法动作验证规则与回放链路。</div>
           <div class="mc">$0 · 不调 API</div>
         </div>
-        <div class="mode-card cheap" data-mode="cheap">
-          <div class="mt">Cheap 预演</div>
-          <div class="md">全员替换为廉价模型，低成本验证 AI 表现。</div>
-          <div class="mc">需 SiliconFlow Key</div>
-        </div>
-        <div class="mode-card official" data-mode="official">
-          <div class="mt">正式阵容</div>
-          <div class="md">每个 AI 用各自原生模型，录制正式素材。</div>
-          <div class="mc">需全部厂商 Key</div>
+        <div class="mode-card real" data-mode="official">
+          <div class="mt">正式对局</div>
+          <div class="md">每个 AI 使用你在「模型配置」里分配的 Provider，调用真实 API。</div>
+          <div class="mc">需配置 Provider</div>
         </div>
       </div>
     </div>
@@ -279,29 +364,45 @@
     </div>
   </section>
 
-  <!-- ========== 模型配置 ========== -->
-  <section class="tab" id="tab-model">
-    <h2>模型与密钥配置</h2>
-    <p class="sub">API Key 仅存于本机 <code>.secrets.json</code>（已 gitignore），不回显、不入库。保存后立即对运行中的服务生效。</p>
+  <!-- ========== 人设库 ========== -->
+  <section class="tab" id="tab-persona">
+    <h2>人设库</h2>
+    <p class="sub">在这里创建和管理角色人设，然后在「开局」里给每个 AI 演员绑定人设。人设描述会注入到决策提示词中，驱动 AI 的性格与行为。</p>
 
     <div class="card">
-      <h3>API Keys</h3>
-      <div id="keys-area"></div>
-      <div style="margin-top:16px;display:flex;align-items:center;gap:12px">
-        <button class="btn" id="btn-save-keys">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
-          保存密钥
+      <h3>人设列表</h3>
+      <div id="persona-list-area"></div>
+      <div style="margin-top:14px">
+        <button class="btn ghost" id="btn-add-persona">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          添加人设
         </button>
-        <span style="font-size:12px;color:var(--dim)">留空表示不修改已保存的值</span>
       </div>
+      <div id="persona-form-area"></div>
     </div>
 
     <div class="card">
-      <h3>演员 → 模型 映射</h3>
-      <table>
-        <thead><tr><th>演员</th><th>模型</th><th>厂商</th><th>cheap 模式</th></tr></thead>
-        <tbody id="model-table"></tbody>
-      </table>
+      <h3>默认绑定</h3>
+      <p style="font-size:12.5px;color:var(--dim);margin-bottom:12px">每个演员的默认人设。在「开局」页面可以为每局对局单独覆盖。</p>
+      <div id="default-bindings-area"></div>
+    </div>
+  </section>
+
+  <!-- ========== 模型配置 ========== -->
+  <section class="tab" id="tab-model">
+    <h2>模型配置</h2>
+    <p class="sub">在这里配置你的 LLM Provider（厂商、协议、URL、模型、密钥），然后在「开局」里给每个演员分配 Provider。配置仅存于本机 <code>.providers.json</code>（已 gitignore），密钥不回显。</p>
+
+    <div class="card">
+      <h3>Provider 列表</h3>
+      <div id="providers-area"></div>
+      <div style="margin-top:14px">
+        <button class="btn ghost" id="btn-add-provider">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          添加 Provider
+        </button>
+      </div>
+      <div id="provider-form-area"></div>
     </div>
   </section>
 
@@ -337,24 +438,36 @@
 </main>
 
 <div class="toast" id="toast"></div>
+<div class="confirm-overlay" id="confirm-overlay">
+  <div class="confirm-box">
+    <div class="cf-icon">⚠️</div>
+    <div class="cf-title" id="cf-title"></div>
+    <div class="cf-msg" id="cf-msg"></div>
+    <div class="cf-actions">
+      <button class="cf-no" id="cf-no">取消</button>
+      <button class="cf-yes" id="cf-yes">确认删除</button>
+    </div>
+  </div>
+</div>
 
 <script>
 const $ = id => document.getElementById(id);
 let state = {
-  games: [], personas: [], currentGame: null, mode: "mock",
-  pollTimer: null, currentJob: null, secrets: [],
+  games: [], actors: [], personaLibrary: [], defaultBindings: {}, providers: [],
+  currentGame: null, mode: "mock",
+  pollTimer: null, currentJob: null,
 };
 
-// ---------- 品牌 Logo（SVG）----------
-// 每个演员对应其公司 logo 的简化矢量，配品牌色圆角底。
+// ---------- 品牌 Logo（图片文件）----------
+// 每个演员对应其公司官方 logo 图片文件，存放在 /web/logo/ 目录下。
 const LOGOS = {
-  gpt: `<svg viewBox="0 0 32 32"><rect width="32" height="32" rx="7" fill="#10a37f"/><g transform="translate(16,16)" fill="#fff"><ellipse rx="2.6" ry="6.6" cy="-4.4"/><ellipse rx="2.6" ry="6.6" cy="-4.4" transform="rotate(60)"/><ellipse rx="2.6" ry="6.6" cy="-4.4" transform="rotate(120)"/><ellipse rx="2.6" ry="6.6" cy="-4.4" transform="rotate(180)"/><ellipse rx="2.6" ry="6.6" cy="-4.4" transform="rotate(240)"/><ellipse rx="2.6" ry="6.6" cy="-4.4" transform="rotate(300)"/><circle r="2.4"/></g></svg>`,
-  claude: `<svg viewBox="0 0 32 32"><rect width="32" height="32" rx="7" fill="#d97757"/><g transform="translate(16,16)" stroke="#fff" stroke-width="2.3" stroke-linecap="round" fill="none"><line y2="-9"/><line y2="-9" transform="rotate(45)"/><line y2="-9" transform="rotate(90)"/><line y2="-9" transform="rotate(135)"/><line y2="-9" transform="rotate(180)"/><line y2="-9" transform="rotate(225)"/><line y2="-9" transform="rotate(270)"/><line y2="-9" transform="rotate(315)"/></g></svg>`,
-  gemini: `<svg viewBox="0 0 32 32"><rect width="32" height="32" rx="7" fill="#4285f4"/><path fill="#fff" d="M16 4.5 L17.7 14.3 L27.5 16 L17.7 17.7 L16 27.5 L14.3 17.7 L4.5 16 L14.3 14.3 Z"/></svg>`,
-  deepseek: `<svg viewBox="0 0 32 32"><rect width="32" height="32" rx="7" fill="#4d6bfe"/><path fill="#fff" d="M22.5 11.5c-1.2-1.6-3.1-2.6-5.2-2.6h-7.3v13.2h7.3c2.1 0 4-1 5.2-2.6-1.3.9-2.9 1.4-4.6 1.4h-3.4V12.7h3.4c1.7 0 3.3.5 4.6 1.4z"/></svg>`,
-  grok: `<svg viewBox="0 0 32 32"><rect width="32" height="32" rx="7" fill="#1a1a1a"/><path d="M9 9 L23 23 M23 9 L9 23" stroke="#fff" stroke-width="2.6" stroke-linecap="round"/></svg>`,
-  kimi: `<svg viewBox="0 0 32 32"><rect width="32" height="32" rx="7" fill="#7c5cff"/><path fill="#fff" d="M21.5 16 a8 8 0 1 1 -8 -8 a6.2 6.2 0 1 0 8 8 z"/></svg>`,
-  qwen: `<svg viewBox="0 0 32 32"><rect width="32" height="32" rx="7" fill="#615ced"/><path fill="none" stroke="#fff" stroke-width="2.4" d="M16 8 a8 8 0 0 1 0 16 a6 6 0 0 1 0 -12 a4 4 0 0 1 0 8"/><circle cx="20" cy="20" r="1.6" fill="#fff"/></svg>`,
+  gpt:      `<img src="/web/logo/chatgpt.png?v=4"  style="width:100%;height:100%;object-fit:contain;display:block" alt="GPT">`,
+  claude:   `<img src="/web/logo/claude.png?v=2"   style="width:100%;height:100%;object-fit:contain;display:block" alt="Claude">`,
+  gemini:   `<img src="/web/logo/gemini.png?v=2"  style="width:100%;height:100%;object-fit:contain;display:block" alt="Gemini">`,
+  deepseek: `<img src="/web/logo/deepseek.png?v=2" style="width:100%;height:100%;object-fit:contain;display:block" alt="DeepSeek">`,
+  grok:     `<img src="/web/logo/grok.png?v=2"     style="width:100%;height:100%;object-fit:contain;display:block" alt="Grok">`,
+  kimi:     `<img src="/web/logo/kimi.png?v=2"     style="width:100%;height:100%;object-fit:contain;display:block" alt="Kimi">`,
+  qwen:     `<img src="/web/logo/Qwen.png?v=2"     style="width:100%;height:100%;object-fit:contain;display:block" alt="Qwen">`,
 };
 const FALLBACK_AVATAR = (emoji, color) =>
   `<svg viewBox="0 0 32 32"><rect width="32" height="32" rx="7" fill="${color}22"/><text x="16" y="21" text-anchor="middle" font-size="16" fill="${color}">${emoji}</text></svg>`;
@@ -362,9 +475,8 @@ function logoHtml(p) {
   if (LOGOS[p.id]) return LOGOS[p.id];
   return FALLBACK_AVATAR(p.emoji, p.color);
 }
-const VENDORS = {"gpt-5":"OpenAI","claude-sonnet":"Anthropic","gemini-pro":"Google",
-  "deepseek-chat":"DeepSeek","grok":"xAI","kimi":"Moonshot","qwen-max":"阿里云"};
-function vendorOf(m) { return VENDORS[m] || m; }
+
+const PROTOCOL_LABELS = {"openai":"OpenAI","anthropic":"Anthropic","google":"Google"};
 
 // ---------- 游戏阵容约束 ----------
 // 海盗分金为 5 人经典局，固定人数；其他游戏至少 2 人。
@@ -390,6 +502,23 @@ function toast(msg, kind = "ok") {
   t.className = "toast show " + kind;
   setTimeout(() => t.className = "toast " + kind, 2800);
 }
+function confirmDialog(title, msg) {
+  return new Promise(resolve => {
+    const ov = $("confirm-overlay");
+    $("cf-title").textContent = title;
+    $("cf-msg").textContent = msg;
+    ov.classList.add("show");
+    const cleanup = () => {
+      ov.classList.remove("show");
+      $("cf-yes").onclick = null;
+      $("cf-no").onclick = null;
+      ov.onclick = null;
+    };
+    $("cf-yes").onclick = () => { cleanup(); resolve(true); };
+    $("cf-no").onclick = () => { cleanup(); resolve(false); };
+    ov.onclick = e => { if (e.target === ov) { cleanup(); resolve(false); } };
+  });
+}
 function escapeHtml(s) {
   return String(s ?? "").replace(/[&<>"']/g,
     c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -403,15 +532,21 @@ document.querySelectorAll(".nav-item").forEach(n => {
     n.classList.add("active");
     $("tab-" + n.dataset.tab).classList.add("active");
     if (n.dataset.tab === "replay") loadLogs();
-    if (n.dataset.tab === "model") loadKeys();
+    if (n.dataset.tab === "model") loadProviders();
+    if (n.dataset.tab === "persona") loadPersonas();
   };
 });
 
 // ---------- 开局 Tab ----------
 async function initPlay() {
-  const [g, p] = await Promise.all([api("/api/games"), api("/api/personas")]);
+  const [g, p, pv] = await Promise.all([
+    api("/api/games"), api("/api/personas"), api("/api/providers")
+  ]);
   state.games = g.games;
-  state.personas = p.personas;
+  state.actors = p.actors || [];
+  state.personaLibrary = p.personas || [];
+  state.defaultBindings = p.default_bindings || {};
+  state.providers = pv.providers || [];
   const sel = $("game-select");
   sel.innerHTML = state.games.map(x => `<option value="${x.dir}">${x.name}</option>`).join("");
   sel.onchange = () => renderGame(sel.value);
@@ -423,6 +558,17 @@ function renderGame(dir) {
   if (!g) return;
   state.currentGame = g;
   $("game-name").value = g.name;
+  // 游戏规则
+  const rulesBox = $("rules-box");
+  if (g.rules) {
+    rulesBox.textContent = g.rules;
+    $("rules-toggle").style.display = "inline-flex";
+  } else {
+    rulesBox.textContent = "";
+    $("rules-toggle").style.display = "none";
+  }
+  rulesBox.classList.remove("show");
+  $("rules-toggle-text").textContent = "显示规则";
   // 参数表单
   $("params-area").innerHTML = `<div class="params-grid">${
     Object.entries(g.params).map(([k, v]) => {
@@ -437,19 +583,74 @@ function renderGame(dir) {
     }).join("")
   }</div>`;
   // 阵容
-  $("cast-area").innerHTML = state.personas.map(p => {
-    const on = g.cast.includes(p.id);
-    return `<div class="cast-chip ${on?"on":""}" data-pid="${p.id}">
-      <div class="av">${logoHtml(p)}</div>
-      <div><div class="nm">${p.name}</div><div class="vn">${vendorOf(p.model)}</div></div></div>`;
+  const provOpts = state.providers.length
+    ? state.providers.map(pv => `<option value="${pv.id}">${escapeHtml(pv.name)}</option>`).join("")
+    : "";
+  const personaOpts = state.personaLibrary.map(p =>
+    `<option value="${p.id}">${escapeHtml(p.name)}</option>`).join("");
+  $("cast-area").innerHTML = state.actors.map(a => {
+    const on = g.cast.includes(a.id);
+    const defaultPid = state.defaultBindings[a.id] || "";
+    const dp = state.personaLibrary.find(p => p.id === defaultPid);
+    const vnText = dp ? dp.name : (on ? "未绑定人设" : "");
+    return `<div class="cast-chip ${on?"on":""}" data-pid="${a.id}">
+      <div class="chip-head">
+        <div class="av">${logoHtml(a)}</div>
+        <div><div class="nm">${a.name}</div><div class="vn" data-vn="${a.id}">${escapeHtml(vnText)}</div></div>
+      </div>
+      <div class="selects">
+        <div class="ps-select"><select data-ps-aid="${a.id}" ${!on?"disabled":""}>
+          <option value="">— 人设 —</option>${personaOpts}
+        </select></div>
+        <div class="pv-select"><select data-pv-aid="${a.id}" ${!on?"disabled":""}>
+          <option value="">— 模型 —</option>${provOpts}
+        </select></div>
+      </div>
+    </div>`;
   }).join("");
+  // 设置默认人设选中
+  document.querySelectorAll(".cast-chip[data-pid] select[data-ps-aid]").forEach(sel => {
+    const aid = sel.dataset.psAid;
+    const pid = state.defaultBindings[aid] || "";
+    sel.value = pid;
+  });
   document.querySelectorAll(".cast-chip").forEach(c => {
-    c.onclick = () => { c.classList.toggle("on"); validateRun(); };
+    c.onclick = (e) => {
+      if (e.target.tagName === "SELECT" || e.target.tagName === "BUTTON") return;
+      c.classList.toggle("on");
+      c.querySelectorAll("select").forEach(s => s.disabled = !c.classList.contains("on"));
+      validateRun();
+    };
   });
   document.querySelectorAll("[data-param]").forEach(inp => {
     inp.oninput = () => validateRun();
   });
+  // 人设下拉变化时更新副标题
+  document.querySelectorAll(".ps-select select").forEach(s => {
+    s.onchange = () => {
+      const aid = s.dataset.psAid;
+      const vn = document.querySelector(`.vn[data-vn="${aid}"]`);
+      const p = state.personaLibrary.find(x => x.id === s.value);
+      if (vn) vn.textContent = p ? p.name : "未绑定人设";
+      validateRun();
+    };
+  });
+  document.querySelectorAll(".pv-select select").forEach(s => {
+    s.onchange = () => validateRun();
+  });
   validateRun();
+}
+
+function toggleRules() {
+  const box = $("rules-box");
+  const txt = $("rules-toggle-text");
+  if (box.classList.contains("show")) {
+    box.classList.remove("show");
+    txt.textContent = "显示规则";
+  } else {
+    box.classList.add("show");
+    txt.textContent = "收起规则";
+  }
 }
 
 document.querySelectorAll(".mode-card").forEach(m => {
@@ -504,24 +705,34 @@ function validateRun() {
     }
   });
 
-  // 模式与密钥
-  if (state.mode === "cheap") {
-    const sf = state.secrets.find(k => k.var === "SILICONFLOW_API_KEY");
-    if (sf && !sf.set) warns.push("cheap 模式需要 SiliconFlow Key，当前未配置（可在「模型配置」添加）");
-  }
-  if (state.mode === "official") {
-    const need = state.currentGame.cast || [];
-    const missing = [];
-    const map = {gpt:"OPENAI_API_KEY", claude:"ANTHROPIC_API_KEY", gemini:"GOOGLE_API_KEY",
-      deepseek:"DEEPSEEK_API_KEY", grok:"XAI_API_KEY", kimi:"MOONSHOT_API_KEY", qwen:"DASHSCOPE_API_KEY"};
-    const sel = [...document.querySelectorAll(".cast-chip.on")].map(c => c.dataset.pid);
-    const checkList = sel.length ? sel : need;
-    for (const pid of checkList) {
-      const v = map[pid]; if (!v) continue;
-      const k = state.secrets.find(x => x.var === v);
-      if (!k || !k.set) missing.push(pid.toUpperCase());
+  // 模式与 Provider
+  if (state.mode !== "mock") {
+    const selectedChips = [...document.querySelectorAll(".cast-chip.on")];
+    const unassigned = [];
+    for (const chip of selectedChips) {
+      const sel = chip.querySelector(".pv-select select");
+      if (!sel || !sel.value) {
+        unassigned.push(chip.dataset.pid.toUpperCase());
+      }
     }
-    if (missing.length) warns.push(`official 模式缺少部分演员的 Key：${missing.join("、")}（未配置会运行失败）`);
+    if (unassigned.length) {
+      errors.push(`正式对局模式下，每个演员必须分配 Provider。未分配：${unassigned.join("、")}`);
+    }
+    if (!state.providers.length) {
+      warns.push("尚未配置任何 Provider，请先到「模型配置」添加。");
+    }
+  }
+  // 人设绑定检查
+  const selectedChips = [...document.querySelectorAll(".cast-chip.on")];
+  const unbound = [];
+  for (const chip of selectedChips) {
+    const sel = chip.querySelector(".ps-select select");
+    if (!sel || !sel.value) {
+      unbound.push(chip.dataset.pid.toUpperCase());
+    }
+  }
+  if (unbound.length) {
+    warns.push(`以下演员未绑定人设，将使用空人设：${unbound.join("、")}`);
   }
 
   // 渲染
@@ -546,12 +757,24 @@ $("btn-run").onclick = async () => {
   const seed = $("seed").value || null;
   const params = collectParams();
   const cast = [...document.querySelectorAll(".cast-chip.on")].map(c => c.dataset.pid);
+  // 收集每个演员的 provider 分配
+  const provider_map = {};
+  document.querySelectorAll(".cast-chip.on .pv-select select").forEach(s => {
+    if (s.value) provider_map[s.dataset.pvAid] = s.value;
+  });
+  // 收集每个演员的人设绑定
+  const persona_map = {};
+  document.querySelectorAll(".cast-chip.on .ps-select select").forEach(s => {
+    if (s.value) persona_map[s.dataset.psAid] = s.value;
+  });
   $("btn-run").disabled = true;
   $("run-hint").textContent = "提交中…";
   try {
     const res = await api("/api/run", {
       method: "POST", headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({game, mode: state.mode, seed, params, cast})
+      body: JSON.stringify({game, mode: state.mode, seed, params, cast,
+        provider_map: Object.keys(provider_map).length ? provider_map : null,
+        persona_map: Object.keys(persona_map).length ? persona_map : null})
     });
     state.currentJob = res.job_id;
     $("progress-card").style.display = "block";
@@ -620,33 +843,357 @@ function renderProgress(j) {
 }
 
 // ---------- 模型配置 Tab ----------
-async function loadKeys() {
-  const data = await api("/api/secrets");
-  state.secrets = data.keys;
-  $("keys-area").innerHTML = data.keys.map(k => `
-    <div class="key-row">
-      <div><div class="kl">${k.label}</div><div class="kv">${k.var}</div></div>
-      <input type="password" data-var="${k.var}" placeholder="${k.set ? "已设置（留空不修改）" : "粘贴 API Key…"}">
-      <div class="key-status ${k.set?"set":"unset"}">${k.set ? "● 已设置" : "○ 未设置"}</div>
-    </div>`).join("");
-  // 模型映射表
-  $("model-table").innerHTML = state.personas.map(p => `
-    <tr><td><span class="model-name"><span class="av">${logoHtml(p)}</span>${p.name}</span></td>
-    <td><span class="pill">${p.model}</span></td>
-    <td>${vendorOf(p.model)}</td>
-    <td style="color:var(--blue)">DeepSeek-V3.2 (SF)</td></tr>`).join("");
+async function loadProviders() {
+  const data = await api("/api/providers");
+  state.providers = data.providers || [];
+  renderProviderList();
 }
-$("btn-save-keys").onclick = async () => {
-  const payload = {};
-  document.querySelectorAll("[data-var]").forEach(inp => {
-    if (inp.value.trim()) payload[inp.dataset.var] = inp.value.trim();
+
+function renderProviderList() {
+  const area = $("providers-area");
+  if (!state.providers.length) {
+    area.innerHTML = `<div class="empty">还没有配置 Provider。点击下方「添加 Provider」开始。</div>`;
+    return;
+  }
+  area.innerHTML = state.providers.map(p => `
+    <div class="prov-row" data-id="${p.id}">
+      <div class="prov-info">
+        <div class="prov-name">${escapeHtml(p.name)}
+          <span class="proto-badge ${p.protocol}">${PROTOCOL_LABELS[p.protocol] || p.protocol}</span>
+          ${p.api_key_set ? '<span style="font-size:10px;color:var(--green)">● 密钥已设</span>' : '<span style="font-size:10px;color:var(--red)">● 未设密钥</span>'}
+        </div>
+        <div class="prov-meta">
+          <span>模型: <code>${escapeHtml(p.model)}</code></span>
+          ${p.base_url ? `<span>URL: <code>${escapeHtml(p.base_url)}</code></span>` : ""}
+          ${p.api_key_hint ? `<span>Key: <code>${escapeHtml(p.api_key_hint)}</code></span>` : ""}
+        </div>
+      </div>
+      <div class="prov-actions">
+        <button class="btn ghost" id="pv-test-${p.id}" onclick="testProviderFromList('${p.id}')">测试</button>
+        <button class="btn ghost" onclick="editProvider('${p.id}')">编辑</button>
+        <button class="btn ghost" style="color:var(--red)" onclick="deleteProvider('${p.id}')">删除</button>
+      </div>
+      <span class="pv-test-result" id="pv-test-result-${p.id}" style="font-size:12px;color:var(--dim);max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex-shrink:1"></span>
+    </div>`).join("");
+}
+
+// 从列表直接测试已保存的 Provider（仅传 id，后端自动加载配置）
+async function testProviderFromList(id) {
+  const btn = $("pv-test-" + id);
+  const resultEl = $("pv-test-result-" + id);
+  if (!btn || !resultEl) return;
+  btn.disabled = true;
+  btn.textContent = "测试中…";
+  resultEl.style.color = "var(--dim)";
+  resultEl.textContent = "";
+  try {
+    const res = await api("/api/providers/test", {
+      method: "POST", headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({id})
+    });
+    if (res.ok) {
+      const usage = res.usage ? ` (${res.usage.input}/${res.usage.output} tok)` : "";
+      resultEl.style.color = "var(--green)";
+      resultEl.textContent = "✅ 正常" + usage;
+      resultEl.title = "连接成功" + usage;
+    } else {
+      resultEl.style.color = "var(--red)";
+      resultEl.textContent = "❌ " + (res.error || "未知错误");
+      resultEl.title = res.error || "未知错误";
+    }
+  } catch (e) {
+    resultEl.style.color = "var(--red)";
+    resultEl.textContent = "❌ " + e.message;
+    resultEl.title = e.message;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "测试";
+  }
+}
+
+$("btn-add-provider").onclick = () => showProviderForm(null);
+
+function showProviderForm(existing) {
+  const area = $("provider-form-area");
+  const p = existing || {};
+  area.innerHTML = `
+    <div class="prov-form">
+      <h3 style="margin-bottom:12px">${existing ? "编辑" : "新增"} Provider</h3>
+      <div class="form-grid">
+        <div class="form-cell">
+          <label>名称 *</label>
+          <input type="text" id="pf-name" value="${escapeHtml(p.name||"")}" placeholder="如 OpenAI GPT-5">
+        </div>
+        <div class="form-cell">
+          <label>协议类型 *</label>
+          <select id="pf-protocol">
+            <option value="openai" ${p.protocol==="openai"?"selected":""}>OpenAI (兼容)</option>
+            <option value="anthropic" ${p.protocol==="anthropic"?"selected":""}>Anthropic</option>
+            <option value="google" ${p.protocol==="google"?"selected":""}>Google</option>
+          </select>
+          <div class="hint">OpenAI 协议兼容 DeepSeek / Kimi / Qwen / xAI 等</div>
+        </div>
+        <div class="form-cell">
+          <label>API 端点 URL</label>
+          <input type="text" id="pf-baseurl" value="${escapeHtml(p.base_url||"")}" placeholder="完整地址，如 https://api.openai.com/v1/chat/completions">
+          <div class="hint">填完整端点地址（含 /v1/chat/completions 等）。Google 协议用 {model} 占位模型名。留空使用协议默认。</div>
+        </div>
+        <div class="form-cell">
+          <label>模型 ID *</label>
+          <input type="text" id="pf-model" value="${escapeHtml(p.model||"")}" placeholder="如 gpt-5 / claude-sonnet-4-5">
+        </div>
+        <div class="form-cell">
+          <label>API Key ${existing ? "（留空不修改）" : "*"}</label>
+          <input type="password" id="pf-apikey" placeholder="${p.api_key_set ? "已设置（"+escapeHtml(p.api_key_hint)+"）" : "粘贴 API Key…"}">
+        </div>
+        <div class="form-cell">
+          <label>输入价格 ($/M token)</label>
+          <input type="number" step="0.01" id="pf-price-in" value="${(p.pricing&&p.pricing.input)||""}" placeholder="如 5.00">
+        </div>
+        <div class="form-cell">
+          <label>输出价格 ($/M token)</label>
+          <input type="number" step="0.01" id="pf-price-out" value="${(p.pricing&&p.pricing.output)||""}" placeholder="如 30.00">
+        </div>
+      </div>
+      <div class="form-actions">
+        <button class="btn" id="btn-save-provider">保存</button>
+        <button class="btn ghost" id="btn-test-provider">测试连接</button>
+        <button class="btn ghost" id="btn-cancel-provider">取消</button>
+        <span id="pf-test-result" style="font-size:12px;color:var(--dim)"></span>
+      </div>
+    </div>`;
+  area.scrollIntoView({behavior:"smooth", block:"nearest"});
+  $("btn-cancel-provider").onclick = () => { area.innerHTML = ""; };
+  // ---- 测试连接 ----
+  $("btn-test-provider").onclick = async () => {
+    const resultEl = $("pf-test-result");
+    const btn = $("btn-test-provider");
+    btn.disabled = true;
+    resultEl.style.color = "var(--dim)";
+    resultEl.textContent = "测试中…";
+    try {
+      const res = await api("/api/providers/test", {
+        method: "POST", headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({
+          protocol: $("pf-protocol").value,
+          base_url: $("pf-baseurl").value.trim(),
+          model: $("pf-model").value.trim(),
+          api_key: $("pf-apikey").value.trim(),
+          id: existing ? existing.id : ""
+        })
+      });
+      if (res.ok) {
+        const usage = res.usage ? ` (输入: ${res.usage.input} / 输出: ${res.usage.output} tokens)` : "";
+        resultEl.style.color = "var(--green)";
+        resultEl.textContent = `✅ 连接成功${usage}`;
+      } else {
+        resultEl.style.color = "var(--red)";
+        resultEl.textContent = `❌ 连接失败: ${res.error || "未知错误"}`;
+      }
+    } catch (e) {
+      resultEl.style.color = "var(--red)";
+      resultEl.textContent = `❌ 测试失败: ${e.message}`;
+    } finally {
+      btn.disabled = false;
+    }
+  };
+  $("btn-save-provider").onclick = async () => {
+    const name = $("pf-name").value.trim();
+    const protocol = $("pf-protocol").value;
+    const base_url = $("pf-baseurl").value.trim();
+    const model = $("pf-model").value.trim();
+    const api_key = $("pf-apikey").value.trim();
+    const priceIn = parseFloat($("pf-price-in").value);
+    const priceOut = parseFloat($("pf-price-out").value);
+    if (!name) { toast("名称不能为空", "err"); return; }
+    if (!model) { toast("模型 ID 不能为空", "err"); return; }
+    if (!existing && !api_key) { toast("API Key 不能为空", "err"); return; }
+    const pricing = (!isNaN(priceIn) || !isNaN(priceOut))
+      ? {input: isNaN(priceIn) ? 3.0 : priceIn, output: isNaN(priceOut) ? 15.0 : priceOut}
+      : null;
+    try {
+      await api("/api/providers", {
+        method: "POST", headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({
+          id: existing ? existing.id : "",
+          name, protocol, base_url, model, api_key, pricing
+        })
+      });
+      toast(existing ? "Provider 已更新" : "Provider 已添加", "ok");
+      area.innerHTML = "";
+      await loadProviders();
+      // 刷新开局页的 provider 下拉
+      if (state.currentGame) renderGame(state.currentGame.dir);
+    } catch (e) {
+      toast("保存失败：" + e.message, "err");
+    }
+  };
+}
+
+async function editProvider(id) {
+  const p = state.providers.find(x => x.id === id);
+  if (!p) return;
+  showProviderForm(p);
+}
+
+async function deleteProvider(id) {
+  const p = state.providers.find(x => x.id === id);
+  if (!p) return;
+  if (!await confirmDialog("删除 Provider", `确定删除 Provider「${p.name}」？`)) return;
+  try {
+    await api("/api/providers/delete", {
+      method: "POST", headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({id})
+    });
+    toast("Provider 已删除", "ok");
+    await loadProviders();
+    if (state.currentGame) renderGame(state.currentGame.dir);
+  } catch (e) {
+    toast("删除失败：" + e.message, "err");
+  }
+}
+
+// ---------- 人设库 Tab ----------
+async function loadPersonas() {
+  const data = await api("/api/personas");
+  state.actors = data.actors || [];
+  state.personaLibrary = data.personas || [];
+  state.defaultBindings = data.default_bindings || {};
+  renderPersonaList();
+  renderDefaultBindings();
+  // 刷新开局页的阵容（人设下拉可能变了）
+  if (state.currentGame) renderGame(state.currentGame.dir);
+}
+
+function renderPersonaList() {
+  const area = $("persona-list-area");
+  if (!state.personaLibrary.length) {
+    area.innerHTML = `<div class="empty">还没有人设。点击下方「添加人设」开始创建。</div>`;
+    return;
+  }
+  area.innerHTML = state.personaLibrary.map(p => `
+    <div class="persona-row" data-id="${p.id}">
+      <div class="persona-info">
+        <div class="persona-name">${escapeHtml(p.name)}</div>
+        <div class="persona-desc">${escapeHtml(p.personality)}</div>
+      </div>
+      <div class="persona-actions">
+        <button class="btn ghost" onclick="editPersona('${p.id}')">编辑</button>
+        <button class="btn ghost" style="color:var(--red)" onclick="deletePersona('${p.id}')">删除</button>
+      </div>
+    </div>`).join("");
+}
+
+function renderDefaultBindings() {
+  const area = $("default-bindings-area");
+  if (!state.actors.length) {
+    area.innerHTML = `<div class="empty">没有演员数据。</div>`;
+    return;
+  }
+  const opts = state.personaLibrary.map(p =>
+    `<option value="${p.id}">${escapeHtml(p.name)}</option>`).join("");
+  area.innerHTML = state.actors.map(a => {
+    const pid = state.defaultBindings[a.id] || "";
+    return `<div class="bind-row">
+      <div class="bind-actor">
+        <div class="av">${logoHtml(a)}</div>
+        <span>${a.name}</span>
+      </div>
+      <select data-bind-aid="${a.id}">
+        <option value="">— 未绑定 —</option>${opts}
+      </select>
+    </div>`;
+  }).join("");
+  // 设置选中值
+  area.querySelectorAll("select[data-bind-aid]").forEach(sel => {
+    sel.value = state.defaultBindings[sel.dataset.bindAid] || "";
+    sel.onchange = () => saveDefaultBinding(sel.dataset.bindAid, sel.value);
   });
-  if (!Object.keys(payload).length) { toast("没有要保存的新 Key", "err"); return; }
-  await api("/api/secrets", {method:"POST", headers:{"Content-Type":"application/json"},
-    body: JSON.stringify(payload)});
-  toast("密钥已保存（合并写入，未填的保留原值）", "ok");
-  loadKeys();
-};
+}
+
+async function saveDefaultBinding(aid, personaId) {
+  // 直接修改本地 state 并保存到后端（通过 personas/save 不合适，这里用专用逻辑）
+  // 后端没有专门的绑定保存接口，所以我们更新 default_bindings 并写回
+  state.defaultBindings[aid] = personaId || "";
+  // 通过 /api/personas/save 不行，因为那是保存人设的
+  // 需要一个保存绑定的接口 — 暂时通过 personas/save 间接处理
+  // 实际上我们需要把 default_bindings 也保存到 personas.yaml
+  // 最简单的方式：添加一个 /api/personas/bindings 接口
+  try {
+    await api("/api/personas/bindings", {
+      method: "POST", headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({bindings: state.defaultBindings})
+    });
+    toast("默认绑定已保存", "ok");
+    if (state.currentGame) renderGame(state.currentGame.dir);
+  } catch (e) {
+    toast("保存绑定失败：" + e.message, "err");
+  }
+}
+
+$("btn-add-persona").onclick = () => showPersonaForm(null);
+
+function showPersonaForm(existing) {
+  const area = $("persona-form-area");
+  const p = existing || {};
+  area.innerHTML = `
+    <div class="persona-form">
+      <h3 style="margin-bottom:12px">${existing ? "编辑" : "新增"}人设</h3>
+      <div style="margin-bottom:12px">
+        <label style="font-size:11.5px;color:var(--dim);display:block;margin-bottom:5px">人设名称 *</label>
+        <input type="text" id="pf-name" value="${escapeHtml(p.name||"")}" placeholder="如 策略家、赌徒、阴谋家…" style="width:100%">
+      </div>
+      <div>
+        <label style="font-size:11.5px;color:var(--dim);display:block;margin-bottom:5px">人设描述 *</label>
+        <textarea id="pf-personality" placeholder="描述这个角色的性格、行为风格、弱点等。这段文字会注入到 AI 的决策提示词中。">${escapeHtml(p.personality||"")}</textarea>
+      </div>
+      <div class="form-actions">
+        <button class="btn" id="btn-save-persona">保存</button>
+        <button class="btn ghost" id="btn-cancel-persona">取消</button>
+      </div>
+    </div>`;
+  area.scrollIntoView({behavior:"smooth", block:"nearest"});
+  $("btn-cancel-persona").onclick = () => { area.innerHTML = ""; };
+  $("btn-save-persona").onclick = async () => {
+    const name = $("pf-name").value.trim();
+    const personality = $("pf-personality").value.trim();
+    if (!name) { toast("人设名称不能为空", "err"); return; }
+    if (!personality) { toast("人设描述不能为空", "err"); return; }
+    try {
+      await api("/api/personas/save", {
+        method: "POST", headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({id: existing ? existing.id : "", name, personality})
+      });
+      toast(existing ? "人设已更新" : "人设已添加", "ok");
+      area.innerHTML = "";
+      await loadPersonas();
+    } catch (e) {
+      toast("保存失败：" + e.message, "err");
+    }
+  };
+}
+
+async function editPersona(id) {
+  const p = state.personaLibrary.find(x => x.id === id);
+  if (!p) return;
+  showPersonaForm(p);
+}
+
+async function deletePersona(id) {
+  const p = state.personaLibrary.find(x => x.id === id);
+  if (!p) return;
+  if (!await confirmDialog("删除人设", `确定删除人设「${p.name}」？\n绑定此人设的演员将变为未绑定状态。`)) return;
+  try {
+    await api("/api/personas/delete", {
+      method: "POST", headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({id})
+    });
+    toast("人设已删除", "ok");
+    await loadPersonas();
+  } catch (e) {
+    toast("删除失败：" + e.message, "err");
+  }
+}
 
 // ---------- 回放库 Tab ----------
 async function loadLogs() {
@@ -657,13 +1204,55 @@ async function loadLogs() {
     return;
   }
   tb.innerHTML = data.logs.map(l => `
-    <tr><td><span class="pill">${l.game}</span></td>
-    <td style="font-family:monospace;font-size:12px">${l.name}</td>
-    <td>${l.mtime}</td><td>${l.size_kb} KB</td>
-    <td><button class="btn ghost" style="padding:6px 13px;font-size:12px" onclick="openReplay('${l.url}')">▶ 回放</button></td>
+    <tr data-url="${l.url}">
+      <td><span class="pill">${l.game}</span></td>
+      <td style="font-family:monospace;font-size:12px">${l.name}</td>
+      <td>${l.mtime}</td><td>${l.size_kb} KB</td>
+      <td>
+        <div class="log-actions">
+          <button class="btn ghost" onclick="openReplay('${l.url}')">▶ 回放</button>
+          <button class="btn ghost" onclick="renameLog('${l.url}','${l.name}')">重命名</button>
+          <button class="btn ghost" style="color:var(--red)" onclick="deleteLog('${l.url}','${l.name}')">删除</button>
+        </div>
+      </td>
     </tr>`).join("");
 }
+
+async function deleteLog(url, name) {
+  if (!await confirmDialog("删除对局", `确定删除「${name}」？\n删除后无法恢复，关联的字幕文件也会一并删除。`)) return;
+  try {
+    await api("/api/logs/delete", {
+      method: "POST", headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({url})
+    });
+    toast("已删除", "ok");
+    await loadLogs();
+  } catch (e) {
+    toast("删除失败：" + e.message, "err");
+  }
+}
+
+async function renameLog(url, oldName) {
+  const newName = prompt("输入新文件名（不含 .jsonl 后缀）：", oldName.replace(/\.jsonl$/, ""));
+  if (newName === null || newName.trim() === "") return;
+  try {
+    const res = await api("/api/logs/rename", {
+      method: "POST", headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({url, new_name: newName.trim()})
+    });
+    toast("已重命名为 " + res.new_name, "ok");
+    await loadLogs();
+  } catch (e) {
+    toast("重命名失败：" + e.message, "err");
+  }
+}
 function openReplay(logUrl) {
+  // 切换到回放库标签页（从开局页点击「立即回放」时 tab-replay 可能未激活）
+  document.querySelectorAll(".nav-item").forEach(x => x.classList.remove("active"));
+  document.querySelectorAll(".tab").forEach(x => x.classList.remove("active"));
+  document.querySelector('.nav-item[data-tab="replay"]').classList.add("active");
+  $("tab-replay").classList.add("active");
+  // 隐藏列表，显示播放器
   $("replay-list-view").style.display = "none";
   $("replay-player-view").style.display = "block";
   $("replay-title").textContent = logUrl.split("/").pop();
