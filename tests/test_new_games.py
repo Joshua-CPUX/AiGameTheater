@@ -202,14 +202,14 @@ class TestPerudo:
 # ---------------------------------------------------------------- 全游戏 Mock 端到端
 
 @pytest.mark.parametrize("game_name", ["dollar_auction", "pirate_gold",
-                                       "ultimatum", "perudo"])
+                                       "ultimatum", "perudo", "solitary_cell"])
 def test_all_games_mock_e2e(tmp_path, game_name):
-    """四个游戏 Mock 模式全部零成本跑通（FR-1.5 回归）。"""
+    """五个游戏 Mock 模式全部零成本跑通（FR-1.5 回归）。"""
     summary = run_game(game_name, mode="mock", seed=42, out_dir=tmp_path)
     assert summary["winner"]
     events = read_events(summary["log"])
     assert events[0]["type"] == "meta"
     assert events[-1]["type"] == "game_end"
-    assert events[0]["stage"]["type"] in ("leaderboard", "proposal_vote")
+    assert events[0]["stage"]["type"] in ("leaderboard", "proposal_vote", "cell_grid")
     seqs = [e["seq"] for e in events]
     assert seqs == list(range(1, len(events) + 1))

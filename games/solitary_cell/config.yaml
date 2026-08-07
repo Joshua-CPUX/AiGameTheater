@@ -1,0 +1,8 @@
+# 独牢 · 对局配置
+name: 独牢 · 项圈与欺诈师
+n_colors: 7       # 颜色池大小（颜色可重复分配，普通玩家无法直接推断自己颜色）
+budget: 6         # 每人全程沟通机会预算（公开喊话耗 2，私聊耗 1）
+max_rounds: 12    # 安全上限：达到则判定欺诈师破坏成功
+
+# 本期阵容：personas.yaml 中的 id 列表（原版为 7 个 AI）
+cast: [gpt, claude, gemini, deepseek, grok, kimi, qwen]

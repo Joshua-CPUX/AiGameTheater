@@ -31,6 +31,7 @@ python -m core.standings out
 | 海盗分金 | `games/pirate_gold/` | 提案被否就喂鲨鱼；AI 不按博弈论最优解出牌 | proposal_vote |
 | 最后通牒 | `games/ultimatum/` | AI 会为了尊严掀桌子吗 | leaderboard |
 | 吹牛骰子 | `games/perudo/` | 全程说谎与读谎（隐藏信息，1 点万能） | leaderboard |
+| 独牢 | `games/solitary_cell/` | 看不见自己的项圈颜色 + 一个内鬼欺诈师（隐藏信息，多阶段） | cell_grid |
 
 ## 制作一期视频
 
@@ -49,7 +50,7 @@ python -m core.standings out
 core/               共享运行器（llm 适配 / 对局循环 / 日志字幕 / 班底人设 / 积分榜）
 games/<游戏名>/      一个游戏一个文件夹：game.py + config.yaml
 viewer/index.html   回放页面（纯 HTML 单文件，双击即用）
-tests/              单元测试（pytest，60 个用例）
+tests/              单元测试（pytest，94 个用例）
 out/                对局产出（日志 + 字幕 + 积分榜）
 docs/               需求文档与系统设计
 ```
@@ -58,7 +59,7 @@ docs/               需求文档与系统设计
 
 1. 复制任一 `games/xxx/` 为 `games/<新游戏>/`；
 2. 实现接口契约：`initial_state` / `active_players` / `visible_state` / `get_prompt` / `apply` / `is_terminal`（外加 `legal_actions` / `display_state` / `settlement` / `game_meta`）；
-3. `game_meta()` 里选盘面模板（`leaderboard` 排行榜式 / `proposal_vote` 提案表决式）并映射 `display_state` 字段；
+3. `game_meta()` 里选盘面模板（`leaderboard` 排行榜式 / `proposal_vote` 提案表决式 / `cell_grid` 独牢牢房式）并映射 `display_state` 字段；
 4. `--mode mock` 零成本跑通 → 写测试 → 上线。
 
 隐藏信息游戏（如吹牛骰子）在 `visible_state()` 里裁剪他人可见信息即可，日志与回放自动兼容。
@@ -66,7 +67,7 @@ docs/               需求文档与系统设计
 ## 测试
 
 ```bash
-python -m pytest tests/ -v     # 60 个用例
+python -m pytest tests/ -v     # 94 个用例
 ```
 
 ## 环境变量（API Key 仅从环境变量读取）

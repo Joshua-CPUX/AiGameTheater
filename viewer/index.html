@@ -73,6 +73,23 @@
                  margin-bottom: 6px; }
   .vote-yes { color: #4ade80; } .vote-no { color: #f87171; }
   .vote-pending { color: var(--dim); }
+  /* 独牢牢房盘面（cell_grid） */
+  .cg-header { text-align: center; margin-bottom: 14px; }
+  .cg-round { font-size: 14px; color: var(--text); margin-bottom: 4px; }
+  .cg-safe { font-size: 13px; color: var(--accent); }
+  .cg-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .cell { background: var(--panel2); border-radius: 10px; padding: 8px;
+          text-align: center; transition: all .3s; }
+  .cell.dead { opacity: .3; filter: grayscale(1); }
+  .cell.speaking { outline: 2px solid var(--accent); }
+  .cell-swatch { width: 26px; height: 26px; border-radius: 50%; margin: 0 auto 4px;
+                 border: 2px solid rgba(255,255,255,.25); }
+  .cell-name { font-size: 13px; font-weight: 600; }
+  .cell-color { font-size: 12px; color: var(--dim); margin-top: 2px; }
+  .cell-status { font-size: 11px; color: var(--accent); margin-top: 3px; min-height: 14px; }
+  .act-msg { font-size: 13px; color: #ffd166; margin-top: 5px;
+             padding-left: 10px; border-left: 2px solid #5a4a1a; }
+  .act-msg::before { content: "🤫 "; }
   footer { background: var(--panel); padding: 10px 20px; display: flex;
            align-items: center; gap: 10px; flex-shrink: 0; flex-wrap: wrap; }
   button, select { background: var(--panel2); color: var(--text); border: none;
@@ -182,6 +199,7 @@ function playerStat(ps) {
   if (ps.dice !== undefined) return `骰子 ×${ps.dice}`;
   if (ps.earnings !== undefined) return `收益 ¥${ps.earnings}`;
   if (ps.gold !== undefined) return `方案 ${ps.gold} 金`;
+  if (ps.budget !== undefined) return `沟通机会 ${ps.budget}`;
   return "";
 }
 
@@ -209,6 +227,7 @@ function renderStage() {
   const t = meta.stage || {};
   if (t.type === "leaderboard") st.innerHTML = tplLeaderboard(s, t);
   else if (t.type === "proposal_vote") st.innerHTML = tplProposalVote(s, t);
+  else if (t.type === "cell_grid") st.innerHTML = tplCellGrid(s, t);
   else st.innerHTML = `<pre style="font-size:12px;color:var(--dim)">${JSON.stringify(s, null, 2)}</pre>`;
 }
 
@@ -263,6 +282,31 @@ function tplProposalVote(s, t) {
     <div class="pv-title">表决</div>${voteRows}`;
 }
 
+// 独牢牢房盘面（cell_grid）：上帝视角展示每个人项圈颜色/身份/预算/猜测
+function tplCellGrid(s, t) {
+  const target = t.target_safe || 4;
+  const safe = s.consecutive_safe || 0;
+  const phase = s.phase === "guess" ? "🎭 猜测阶段" : "💬 沟通阶段";
+  const cells = meta.players.map(p => {
+    const ps = (s.players && s.players[p.id]) || {};
+    const dead = ps.alive === false;
+    const hex = ps.color_hex || "#888";
+    const trick = ps.is_trickster ? " 🎭" : "";
+    let status;
+    if (dead) status = "☠️ 淘汰";
+    else if (s.phase === "guess" && ps.last_guess) status = `猜「${ps.last_guess}」`;
+    else if (ps.budget !== undefined) status = `🗣${ps.budget}`;
+    else status = "";
+    return `<div class="cell ${dead ? "dead" : ""}">
+      <div class="cell-swatch" style="background:${hex}"></div>
+      <div class="cell-name">${p.emoji} ${p.name}${trick}</div>
+      <div class="cell-color">${ps.color || "？"}</div>
+      <div class="cell-status">${status}</div></div>`;
+  }).join("");
+  return `<div class="cg-header"><div class="cg-round">第 ${s.round_no || 1} 轮 · ${phase}</div>
+    <div class="cg-safe">连续安全 ${safe} / ${target}</div></div><div class="cg-grid">${cells}</div>`;
+}
+
 // ---------- 事件渲染 ----------
 function renderEvent(e) {
   const stream = $("stream");
@@ -280,14 +324,21 @@ function renderEvent(e) {
     const cls = "bubble" + (e.highlight ? " highlight" : "");
     let revealHtml = "";
     if (e.reveal) {
-      revealHtml = `<div class="sys reveal">🎲 开骰：` +
-        Object.entries(e.reveal).map(([pid, dice]) =>
-          `${playerOf(pid).name}[${dice.join(" ")}]`).join("　") + `</div>`;
+      const first = Object.values(e.reveal)[0];
+      const isStr = typeof first === "string";
+      revealHtml = `<div class="sys reveal">${isStr ? "🎨 揭示颜色" : "🎲 开骰"}：` +
+        Object.entries(e.reveal).map(([pid, v]) =>
+          `${playerOf(pid).name}[${Array.isArray(v) ? v.join(" ") : v}]`).join("　") + `</div>`;
+    }
+    let actMsg = "";
+    if (e.action && e.action.type === "private_chat" && e.action.message) {
+      actMsg = `<div class="act-msg">悄悄对 ${e.action.target} 说：${escapeHtml(e.action.message)}</div>`;
     }
     stream.insertAdjacentHTML("beforeend",
       `<div class="${cls}"><div class="who">${e.emoji || ""} ${e.player} · 第${e.round}轮</div>
        <div class="speech">${escapeHtml(e.speech)}</div>
        ${e.thought ? `<div class="thought">${escapeHtml(e.thought)}</div>` : ""}
+       ${actMsg}
        ${e.note ? `<div class="hl-note">${escapeHtml(e.note)}</div>` : ""}</div>` + revealHtml);
   }
   stream.scrollTop = stream.scrollHeight;
