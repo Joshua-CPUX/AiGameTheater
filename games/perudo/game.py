@@ -111,7 +111,8 @@ def get_prompt(state: dict, player_id: str, persona: dict, memory: list) -> str:
         current_bid=(f"{bid['quantity']} 个 {bid['face']} 点"
                      if bid["bidder"] else "还没有人叫点"),
         last_bidder=bid["bidder"] or "—",
-        cur_q=bid["quantity"], cur_f=bid["face"])
+        cur_q=bid["quantity"], cur_f=bid["face"],
+        history=history)
 
 
 def legal_actions(state: dict, player_id: str) -> list[dict]:

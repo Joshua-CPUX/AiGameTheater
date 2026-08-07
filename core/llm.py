@@ -59,6 +59,7 @@ PRICING = {
     "claude-sonnet": {"input": 3.00, "output": 15.00},
     "gemini-pro":   {"input": 2.50, "output": 15.00},
     "deepseek-chat": {"input": 0.30, "output": 0.90},
+    "deepseek-ai/DeepSeek-V3.2": {"input": 0.28, "output": 0.42},  # SiliconFlow 托管价（约 ¥2/¥3 每 M）
     "grok":         {"input": 3.00, "output": 15.00},
     "kimi":         {"input": 0.60, "output": 2.50},
     "qwen-max":     {"input": 0.40, "output": 1.20},
@@ -273,9 +274,12 @@ MODEL_REGISTRY = {
     "kimi":          ("openai_compatible", "kimi-k2", "https://api.moonshot.cn/v1"),
     "qwen-max":      ("openai_compatible", "qwen-max",
                       "https://dashscope.aliyuncs.com/compatible-mode/v1"),
+    # SiliconFlow 托管的 DeepSeek-V3.2（国内可达，cheap 模式默认）
+    "deepseek-sf":   ("openai_compatible", "deepseek-ai/DeepSeek-V3.2",
+                      "https://api.siliconflow.cn/v1"),
 }
 
-CHEAP_MODEL = "deepseek-chat"  # --cheap 模式全员替换（FR-2.5）
+CHEAP_MODEL = "deepseek-sf"  # --cheap 模式全员替换（FR-2.5）
 
 
 def make_client(persona_model: str, cheap: bool = False,
@@ -288,6 +292,8 @@ def make_client(persona_model: str, cheap: bool = False,
     api_key = None
     if base_url and "deepseek" in base_url:
         api_key = os.environ.get("DEEPSEEK_API_KEY")
+    elif base_url and "siliconflow" in base_url:
+        api_key = os.environ.get("SILICONFLOW_API_KEY")
     elif base_url and "x.ai" in base_url:
         api_key = os.environ.get("XAI_API_KEY")
     elif base_url and "moonshot" in base_url:
