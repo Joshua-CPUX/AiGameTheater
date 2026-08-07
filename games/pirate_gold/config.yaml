@@ -1,0 +1,4 @@
+# 海盗分金 · 对局配置
+name: 海盗分金 · 谁喂鲨鱼
+gold: 100
+cast: [gpt, claude, gemini, deepseek, grok]   # 5 人海盗经典局

@@ -1,0 +1,5 @@
+# 最后通牒 · 对局配置
+name: 最后通牒 · AI 会掀桌子吗
+pot: 100
+rounds: 14        # 7 人 × 2 轮提议
+cast: [gpt, claude, gemini, deepseek, grok, kimi, qwen]

@@ -68,9 +68,10 @@ def run_game(game_name: str, mode: str = "mock", seed: int | None = None,
     personas = load_personas()
     cast = build_cast(config, personas)
 
-    # 游戏内部只认 players 列表（FR-1.1 接口契约）
+    # 游戏内部只认 players 列表（FR-1.1 接口契约）；seed 注入供游戏内随机使用
     game_config = dict(config)
     game_config["players"] = [{"id": c["id"]} for c in cast]
+    game_config["seed"] = seed if seed is not None else 0
 
     out_dir = Path(out_dir or ROOT / "out")
     stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -179,6 +180,8 @@ def _log_action(logger, game, state, player_id, persona,
         event["note"] = extra["highlight"]
     if extra.get("fallback"):
         event["fallback"] = extra["fallback"]
+    if extra.get("reveal"):
+        event["reveal"] = extra["reveal"]
     return logger.log(event)
 
 

@@ -1,0 +1,4 @@
+# 吹牛骰子 · 对局配置
+name: 吹牛骰子 · 谁在说谎
+dice_per_player: 5
+cast: [gpt, claude, gemini, deepseek, grok, kimi, qwen]
