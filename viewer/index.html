@@ -161,21 +161,39 @@ document.ondrop = e => { e.preventDefault(); loadFile(e.dataTransfer.files[0]); 
 function loadFile(file) {
   if (!file) return;
   const reader = new FileReader();
-  reader.onload = () => {
-    const lines = reader.result.split("\n").filter(l => l.trim());
-    const all = lines.map(l => JSON.parse(l));
-    meta = all.find(e => e.type === "meta");
-    events = all.filter(e => e.type !== "meta");
-    dropzone.style.display = "none";
-    $("game-name").textContent = meta.game_name || meta.game;
-    $("mode-ind").textContent = "模式: " + (meta.mode || "");
-    $("progress").max = events.length - 1;
-    idx = -1; $("stream").innerHTML = "";
-    renderSidebar(); renderStage();
-    stepNext();
-  };
+  reader.onload = () => loadText(reader.result);
   reader.readAsText(file);
 }
+
+// 通过 URL 自动加载日志（控制台回放集成用）：?log=/out/xxx.jsonl
+function loadFromUrl(url) {
+  fetch(url).then(r => {
+    if (!r.ok) throw new Error("HTTP " + r.status);
+    return r.text();
+  }).then(loadText).catch(err => {
+    dropzone.querySelector(".big").textContent = "❌ 加载失败：" + err.message;
+  });
+}
+
+function loadText(text) {
+  const lines = text.split("\n").filter(l => l.trim());
+  const all = lines.map(l => JSON.parse(l));
+  meta = all.find(e => e.type === "meta");
+  events = all.filter(e => e.type !== "meta");
+  dropzone.style.display = "none";
+  $("game-name").textContent = meta.game_name || meta.game;
+  $("mode-ind").textContent = "模式: " + (meta.mode || "");
+  $("progress").max = events.length - 1;
+  idx = -1; $("stream").innerHTML = "";
+  renderSidebar(); renderStage();
+  stepNext();
+}
+
+// 启动时若带 ?log= 参数则自动加载
+(() => {
+  const p = new URLSearchParams(location.search).get("log");
+  if (p) loadFromUrl(p);
+})();
 
 // ---------- 通用工具 ----------
 function escapeHtml(s) {
